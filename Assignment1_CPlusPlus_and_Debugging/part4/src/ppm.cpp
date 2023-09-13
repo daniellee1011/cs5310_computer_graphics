@@ -83,6 +83,9 @@ void PPM::savePPM(std::string outputFileName) const {
 // 0 in a ppm.
 void PPM::darken() {
   // TODO: Output a 'filtered' PPM image.
+  for (int i = 0; i < m_PixelData.size(); i++) {
+    m_PixelData[i] = m_PixelData[i] / 2;
+  }
 }
 
 // Lighten doubles (integer multiply by 2) each of the red, green
