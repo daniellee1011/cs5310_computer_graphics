@@ -64,6 +64,17 @@ PPM::~PPM() {
 // Saves a PPM Image to a new file.
 void PPM::savePPM(std::string outputFileName) const {
   // TODO: Save a PPM image to disk
+  std::cout << "outputFilename: " << outputFileName << std::endl;
+  std::ofstream outFile;
+
+  outFile.open(outputFileName);
+
+  outFile << "P3" << std::endl;
+  outFile << m_width << " " << m_height << std::endl;
+  outFile << 255 << std::endl;
+  for (int i = 0; i < m_PixelData.size(); i++) {
+    outFile << (int)m_PixelData[i] << std::endl;
+  }
 }
 
 // Darken halves (integer division by 2) each of the red, green
