@@ -2,16 +2,24 @@
 // g++ -std=c++17 pointers.cpp -o prog
 #include <iostream>
 
-int main(){
+int main() {
 
   // Pointers can be tricky.
-  // 
+  //
   // Feel free to use tools like valgrind and gdb to help you debug.
 
-	return 0;
+  int *px = nullptr;
+
+  int x = 7;
+
+  px = &x;
+
+  std::cout << "px dereferenced is = " << *px << "\n";
+
+  return 0;
 }
 
-// Pointers can be 'Tricksy' sometimes--so practice now!
+// Pointers can be 'Tricky' sometimes--so practice now!
 // https://www.asciiart.eu/books/lord-of-the-rings
 //         .';:;'.
 //        /_' _' /\   __
@@ -25,5 +33,5 @@ int main(){
 //    / /    '-._'-,     / / \ (
 // __/ (_    ,;' .-'    / /  /_'-._
 // `"-'` ~`  ccc.'   __.','     \j\L\
-//                 .='/|\7      
+//                 .='/|\7
 //     snd           ' `
