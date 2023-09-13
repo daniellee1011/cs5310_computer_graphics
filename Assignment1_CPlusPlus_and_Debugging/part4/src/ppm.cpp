@@ -1,4 +1,5 @@
 #include "PPM.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -94,6 +95,9 @@ void PPM::darken() {
 // 255 in a ppm.
 void PPM::lighten() {
   // TODO: Output a 'filtered' PPM image.
+  for (int i = 0; i < m_PixelData.size(); i++) {
+    m_PixelData[i] = static_cast<uint8_t>(std::min(m_PixelData[i] * 2, 255));
+  }
 }
 
 // Sets a pixel to a specific R,G,B value
