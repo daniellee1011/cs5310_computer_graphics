@@ -30,8 +30,8 @@ int main(int argc, char *argv[]) {
 
   // Run each unit test one after the other
   unitTest1();
-  // unitTest2();
-  // unitTest3();
+  unitTest2();
+  unitTest3();
 
   return 0;
 }
