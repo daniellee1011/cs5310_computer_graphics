@@ -58,8 +58,9 @@ void PPM::savePPM(std::string outputFileName) const {
   outFile << "P3" << std::endl;
   outFile << m_width << " " << m_height << std::endl;
   outFile << 255 << std::endl;
-  for (int i = 0; i < m_PixelData.size(); i++) {
-    outFile << (int)m_PixelData[i] << std::endl;
+  for (int i = 0; i < m_PixelData.size(); i += 3) {
+    outFile << (int)m_PixelData[i] << " " << (int)m_PixelData[i + 1] << " "
+            << (int)m_PixelData[i + 2] << std::endl;
   }
 }
 
