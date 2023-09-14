@@ -18,39 +18,24 @@ PPM::PPM(std::string fileName) {
   }
 
   std::string line = "";
-  std::getline(inFile, line);
-  std::string type = "";
-  type = line;
-  std::cout << "type: " << type << std::endl;
-
-  std::getline(inFile, line);
-  std::getline(inFile, line);
-  std::cout << "line: w_h: " << line << std::endl;
-  std::stringstream ss(line);
-  std::string word;
-  std::vector<std::string> words;
-
-  while (ss >> word) {
-    words.push_back(word);
-  }
-  m_width = std::stoi(words[0]);
-  m_height = std::stoi(words[1]);
-  std::cout << m_width << " " << m_height << std::endl;
-
-  std::getline(inFile, line);
-  int max_value = std::stoi(line);
-  std::cout << "max_value: " << max_value << std::endl;
+  std::vector<std::string> ppmData;
 
   while (std::getline(inFile, line)) {
-    if (line.empty())
+    if (line[0] == '#')
       continue;
-
-    if (line[0] == '#') {
-      std::cout << "Comment: " << line << std::endl;
-    } else {
-      uint8_t pixelData = static_cast<uint8_t>(std::stoi(line));
-      m_PixelData.push_back(pixelData);
+    std::stringstream ss(line);
+    std::string data;
+    while (ss >> data) {
+      ppmData.push_back(data);
     }
+  }
+
+  m_width = std::stoi(ppmData[1]);
+  m_height = std::stoi(ppmData[2]);
+
+  for (int i = 4; i < ppmData.size(); i++) {
+    uint8_t pixelDatum = static_cast<uint8_t>(std::stoi(ppmData[i]));
+    m_PixelData.push_back(pixelDatum);
   }
 }
 
