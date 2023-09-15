@@ -91,4 +91,23 @@ void PPM::lighten() {
 //       it may be useful to implement.
 void PPM::setPixel(int x, int y, uint8_t R, uint8_t G, uint8_t B) {
   // TODO: Optional to implement.
+  if (x < 0 || x >= 512 || y < 0 || y >= 512) {
+    std::cerr << "Error: Invalid cooridnates!" << std::endl;
+    return;
+  }
+
+  // The following check is unnecessary because when `uint8_t` input parameters
+  // are out of range,
+  // they wrap around: negative values become 255, and values exceeding 255 take
+  // on the modulus 256 result.
+
+  //   if (R < 0 || R > 255 || G < 0 || G > 255 || B < 0 || B > 255) {
+  //     std::cerr << "Error: Invalid RGB input!" << std::endl;
+  //     return;
+  //   }
+
+  int pos = (x * 512 + y) * 3;
+  m_PixelData[pos] = R;
+  m_PixelData[pos + 1] = G;
+  m_PixelData[pos + 2] = B;
 }
