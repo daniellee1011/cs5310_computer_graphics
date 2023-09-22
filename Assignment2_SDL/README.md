@@ -2,14 +2,15 @@
 
 *TODO*: Please edit the following information in your assignment
 
-* Name: 
-* How many hours did it take you to complete this assignment? 
+* Name: Dongwook Lee
+* How many hours did it take you to complete this assignment?
+: 7 hours
 * Did you collaborate or share ideas with any other students/TAs/Professors? 
+: I participated in office hours once with a TA.
 * Did you use any external resources? 
-  * (tbd if any)
-  * (tbd if any)
-  * (tbd if any)
+: I watched YouTube videos from the professor about SDL and OpenGL and googled to solve compiling issues.
 * (Optional) What was the most interesting part of the assignment? How would you improve this assignment?
+: Implementing the assignment using SDL and OpenGL was interesting.
 
 # Assignment
 
