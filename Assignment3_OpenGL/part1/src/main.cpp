@@ -332,7 +332,7 @@ void PreDraw() {
   // Initialize clear color
   // This is the background of the screen.
   glViewport(0, 0, gScreenWidth, gScreenHeight);
-  glClearColor(1.f, 1.f, 0.f, 1.f);
+  glClearColor(0.f, 0.f, 0.f, 1.f);
 
   // Clear color buffer and Depth Buffer
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
