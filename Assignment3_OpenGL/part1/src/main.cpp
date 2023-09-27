@@ -258,9 +258,9 @@ void VertexSpecification() {
   //       OpenGL (GPU) related functions are packed closer together versus CPU
   //       operations.
   const std::vector<GLfloat> vertexPositions{
-      -0.8f, -0.8f, 0.0f, // Left vertex position
-      0.8f,  -0.8f, 0.0f, // right vertex position
-      0.0f,  0.8f,  0.0f, // Top vertex position
+      -0.2f, -0.4f, 0.0f, // Left vertex position
+      0.4f,  -0.4f, 0.0f, // right vertex position
+      -0.4f, 0.4f,  0.0f, // Top vertex position
   };
 
   // Vertex Arrays Object (VAO) Setup
