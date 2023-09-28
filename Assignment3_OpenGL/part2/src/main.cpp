@@ -49,6 +49,11 @@ GLuint gVertexArrayObject = 0;
 // normals, textures) VBOs are our mechanism for arranging geometry on the GPU.
 GLuint gVertexBufferObject = 0;
 
+GLuint gElementBufferObject = 0;
+
+enum class Shape { TRIANGLE, RECTANGLE };
+Shape currentShape = Shape::TRIANGLE;
+
 // Shaders
 // Here we setup two shaders, a vertex shader and a fragment shader.
 // At a minimum, every Modern OpenGL program needs a vertex and a fragment
@@ -258,9 +263,10 @@ void VertexSpecification() {
   //       OpenGL (GPU) related functions are packed closer together versus CPU
   //       operations.
   const std::vector<GLfloat> vertexPositions{
-      -0.8f, -0.8f, 0.0f, // Left vertex position
-      0.8f,  -0.8f, 0.0f, // right vertex position
-      0.0f,  0.8f,  0.0f, // Top vertex position
+      -0.8f, -0.8f, 0.0f, // Bottom Left vertex position
+      0.8f,  -0.8f, 0.0f, // Bottom Right vertex position
+      -0.8f, 0.8f,  0.0f, // Top Left vertex position
+      0.8f,  0.8f,  0.0f, // Top Right vertex position
   };
 
   // Vertex Arrays Object (VAO) Setup
@@ -295,13 +301,21 @@ void VertexSpecification() {
 
   // TODO: Setup indices
   const std::vector<GLuint> indexBufferData{
-      /* add indices here, think about winding order! */};
+      /* add indices here, think about winding order! */
+      0, 1, 2, // Indices for the triangle
+      0, 1, 2, // Frist triangle of the rectangle
+      1, 3, 2  // Second triangle for the rectangle
+  };
   //
   // TODO: Setup the index buffer
   // e.g.
   // glGenBuffers(1,.....)
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFEER, ....)
+  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ....)
   // glBufferData(GL_ELEMENT_ARRAY_BUFFER, ....);
+  glGenBuffers(1, &gElementBufferObject);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gElementBufferObject);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferData.size() * sizeof(GLint),
+               indexBufferData.data(), GL_STATIC_DRAW);
 
   // For our Given Vertex Array Object, we need to tell OpenGL
   // 'how' the information in our buffer will be used.
@@ -369,7 +383,15 @@ void Draw() {
   // Render data
 
   // TODO: Change this draw call to 'glDrawElements'
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  switch (currentShape) {
+  case Shape::TRIANGLE:
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void *)0);
+    break;
+  case Shape::RECTANGLE:
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,
+                   (void *)(3 * sizeof(GLuint)));
+    break;
+  }
 
   // Stop using our current graphics pipeline
   // Note: This is not necessary if we only have one graphics pipeline.
@@ -405,6 +427,14 @@ void Input() {
     if (e.type == SDL_QUIT) {
       std::cout << "Goodbye! (Leaving MainApplicationLoop())" << std::endl;
       gQuit = true;
+    } else if (e.type == SDL_KEYDOWN) {
+      if (e.key.keysym.sym == SDLK_LEFT) {
+        std::cout << "Left key has pressed" << std::endl;
+        currentShape = Shape::TRIANGLE;
+      } else if (e.key.keysym.sym == SDLK_RIGHT) {
+        std::cout << "Right key has pressed" << std::endl;
+        currentShape = Shape::RECTANGLE;
+      }
     }
   }
 }
