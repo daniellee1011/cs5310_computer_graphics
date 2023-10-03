@@ -404,13 +404,18 @@ void VertexSpecification() {
   std::vector<GLfloat> surfaceNormalData;
 
   // TODO: Create edges e1 and e2
-  glm::vec3 e1;
-  glm::vec3 e2;
+  glm::vec3 vertex0(vertexData[0], vertexData[1], vertexData[2]);
+  glm::vec3 vertex1(vertexData[3], vertexData[4], vertexData[5]);
+  glm::vec3 vertex2(vertexData[6], vertexData[7], vertexData[8]);
+
+  glm::vec3 e1 = vertex1 - vertex0;
+  glm::vec3 e2 = vertex2 - vertex0;
 
   // Take cross product to get perpendicular edge
   // Don't forget to normalize
   // TODO: See glm::cross and glm::normalize
-  glm::vec3 normal;
+  glm::vec3 w = glm::cross(e1, e2);
+  glm::vec3 normal = glm::normalize(w);
 
   // Find a 'midpoint' or 'centroid' to display the surface normal.
   // Up to you how you want to display this, but the centroid is fine.
@@ -418,7 +423,7 @@ void VertexSpecification() {
 
   // TODO -- compute the 'midpoint' or 'centroid' so the normal shows up towards
   // the center of triangle.
-  glm::vec3 midpoint;
+  glm::vec3 midpoint((vertex0 + vertex1 + vertex2) / 3.0f);
 
   // Populate the surface normal data
   surfaceNormalData.push_back(midpoint.x);
@@ -429,8 +434,8 @@ void VertexSpecification() {
   surfaceNormalData.push_back(midpoint.z + normal.z);
 
   glGenVertexArrays(1, &gVertexArrayObjectForNormal);
-  // We bind (i.e. select) to the Vertex Array Object (VAO) that we want to work
-  // withn.
+  // We bind (i.e. select) to the Vertex Array Object (VAO) that we want to
+  // work withn.
   glBindVertexArray(gVertexArrayObjectForNormal);
 
   // Vertex Buffer Object (VBO) creation
@@ -439,8 +444,8 @@ void VertexSpecification() {
   // binding to a buffer.
   glGenBuffers(1, &gVertexBufferObjectForNormal);
   // Next we will do glBindBuffer.
-  // Bind is equivalent to 'selecting the active buffer object' that we want to
-  // work with in OpenGL.
+  // Bind is equivalent to 'selecting the active buffer object' that we want
+  // to work with in OpenGL.
   glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObjectForNormal);
   // Now, in our currently binded buffer, we populate the data from our
   // 'vertexPositions' (which is on the CPU), onto a buffer that will live
@@ -460,8 +465,8 @@ void VertexSpecification() {
   // through the data.
   glVertexAttribPointer(
       0, // Attribute 0 corresponds to the enabled glEnableVertexAttribArray
-         // In the future, you'll see in our vertex shader this also correspond
-         // to (layout=0) which selects these attributes.
+         // In the future, you'll see in our vertex shader this also
+         // correspond to (layout=0) which selects these attributes.
       3, // The number of components (e.g. x,y,z = 3 components)
       GL_FLOAT,             // Type
       GL_FALSE,             // Is the data normalized
@@ -479,8 +484,8 @@ void VertexSpecification() {
 /**
  * PreDraw
  * Typically we will use this for setting some sort of 'state'
- * Note: some of the calls may take place at different stages (post-processing)
- * of the pipeline.
+ * Note: some of the calls may take place at different stages
+ * (post-processing) of the pipeline.
  * @return void
  */
 void PreDraw() {
