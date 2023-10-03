@@ -292,7 +292,7 @@ void InitializeProgram() {
 glm::vec3 CreateEdgeFromTwoVertices(float x1, float y1, float z1, float x2,
                                     float y2, float z2) {
   // OPTIONAL TODO -- but probably helpful to imlement this function.
-  return glm::vec3(0.0f, 0.0f, 0.0f);
+  return glm::vec3(x2 - x1, y2 - y1, z2 - z1);
 }
 
 /**
@@ -408,8 +408,12 @@ void VertexSpecification() {
   glm::vec3 vertex1(vertexData[3], vertexData[4], vertexData[5]);
   glm::vec3 vertex2(vertexData[6], vertexData[7], vertexData[8]);
 
-  glm::vec3 e1 = vertex1 - vertex0;
-  glm::vec3 e2 = vertex2 - vertex0;
+  glm::vec3 e1 =
+      CreateEdgeFromTwoVertices(vertexData[0], vertexData[1], vertexData[2],
+                                vertexData[3], vertexData[4], vertexData[5]);
+  glm::vec3 e2 =
+      CreateEdgeFromTwoVertices(vertexData[0], vertexData[1], vertexData[2],
+                                vertexData[6], vertexData[7], vertexData[8]);
 
   // Take cross product to get perpendicular edge
   // Don't forget to normalize
