@@ -258,11 +258,11 @@ void VertexSpecification() {
   //       operations.
   const std::vector<GLfloat> vertexData{
       -0.8f, -0.8f, 0.0f, // Left vertex position
-                          // TODO: Interleave your color data in the vertex data
-      0.8f, -0.8f, 0.0f,  // right vertex position
-                          // TODO: Interleave your color data in the vertex data
-      0.0f, 0.8f, 0.0f,   // Top vertex position
-                          // TODO: Interleave your color data in the vertex data
+      1.0f,  0.0f,  0.0f, // TODO: Interleave your color data in the vertex data
+      0.8f,  -0.8f, 0.0f, // right vertex position
+      0.0f,  1.0f,  0.0f, // TODO: Interleave your color data in the vertex data
+      0.0f,  0.8f,  0.0f, // Top vertex position
+      0.0f,  0.0f,  1.0f, // TODO: Interleave your color data in the vertex data
   };
 
   // Vertex Arrays Object (VAO) Setup
@@ -317,12 +317,16 @@ void VertexSpecification() {
   // TODO: Setup your vertex attribute point for color
   // 		   Make sure to setup the stride and offset positions
   // appropriately
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6,
+                        (GLvoid *)(sizeof(GL_FLOAT) * 3));
 
   // Unbind our currently bound Vertex Array Object
   glBindVertexArray(0);
   // Disable any attributes we opened in our Vertex Attribute Arrray,
   // as we do not want to leave them open.
   glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
   //	glDisableVertexAttribArray(1); // TODO: Disable the attribute '1' for
   // the vertex colors
 }
