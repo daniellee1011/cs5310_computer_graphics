@@ -11,13 +11,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-
 // C++ Standard Template Library (STL)
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-
 
 // Our libraries
 #include "Camera.hpp"
@@ -513,12 +511,28 @@ void PreDraw() {
       glm::rotate(model, glm::radians(g_uRotate), glm::vec3(0.0f, 1.0f, 0.0f));
 
   // TODO: Send data to GPU
+  GLint u_ModelMatrixLocation =
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ModelMatrix");
+  if (u_ModelMatrixLocation >= 0) {
+    glUniformMatrix4fv(u_ModelMatrixLocation, 1, GL_FALSE, &model[0][0]);
+  } else {
+    std::cout << "Could not find u_ModelMatrix, maybe a mispelling?\n";
+    exit(EXIT_FAILURE);
+  }
 
   // Projection matrix (in perspective)
   glm::mat4 perspective =
       glm::perspective(glm::radians(45.0f),
                        (float)gScreenWidth / (float)gScreenHeight, 0.1f, 20.0f);
   // TODO: Send data to GPU
+  GLint u_ProjectionLocation =
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_Projection");
+  if (u_ProjectionLocation >= 0) {
+    glUniformMatrix4fv(u_ProjectionLocation, 1, GL_FALSE, &perspective[0][0]);
+  } else {
+    std::cout << "Could not find u_Projection, maybe a mispelling?\n";
+    exit(EXIT_FAILURE);
+  }
 
   // Perform our rotation update
   if (g_rotatePositive) {
