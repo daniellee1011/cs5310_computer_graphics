@@ -3,7 +3,6 @@
 #include "glm/gtx/rotate_vector.hpp"
 #include "glm/gtx/transform.hpp"
 
-
 #include <iostream>
 
 void Camera::MouseLook(int mouseX, int mouseY) {
@@ -31,22 +30,28 @@ void Camera::MouseLook(int mouseX, int mouseY) {
 
 void Camera::MoveForward(float speed) {
   //   TODO -- consider which glm::vec3 you are updating, and by what factor
+  m_eyePosition += m_viewDirection * speed;
 }
 
 void Camera::MoveBackward(float speed) {
   //   TODO -- consider which glm::vec3 you are updating, and by what factor
+  m_eyePosition -= m_viewDirection * speed;
 }
 
 void Camera::MoveLeft(float speed) {
   //   TODO -- Note: You are updating the 'eye' position, but consider
   //        	       that you will need to update the 'rightVector'
   // Compute the right vector and update your 'eye' accordingly
+  glm::vec3 rightVector = glm::normalize(cross(m_upVector, m_viewDirection));
+  m_eyePosition += rightVector * speed;
 }
 
 void Camera::MoveRight(float speed) {
   //   TODO -- Note: You are updating the 'eye' position, but consider
   //        	       that you will need to update the 'rightVector'
   // Compute the right vector and update your 'eye' accordingly
+  glm::vec3 rightVector = cross(m_upVector, m_viewDirection);
+  m_eyePosition -= rightVector * speed;
 }
 
 void Camera::MoveUp(float speed) { m_eyePosition.y += speed; }
