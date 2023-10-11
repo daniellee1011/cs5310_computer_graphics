@@ -20,9 +20,17 @@ void Camera::MouseLook(int mouseX, int mouseY) {
   // Detect how much the mouse has moved since
   // the last time
   // TODO
+  glm::vec2 diff = newMousePosition - m_oldMousePosition;
 
   // Rotate about the upVector
   // TODO
+  const float ROTATION_SPEED = 0.05f;
+  float horizontalAngle = ROTATION_SPEED * diff.x;
+
+  glm::vec4 rotated =
+      glm::rotate(glm::mat4(1.0f), glm::radians(horizontalAngle), m_upVector) *
+      glm::vec4(m_viewDirection, 0.0f);
+  m_viewDirection = glm::vec3(rotated);
 
   // Update our old position after we have made changes
   m_oldMousePosition = newMousePosition;
