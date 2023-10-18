@@ -299,6 +299,24 @@ std::vector<Triangle> generatePlane(size_t resolution = 0) {
   // Store the resulting plane
   std::vector<Triangle> result;
 
+  GLfloat step = 2.0f / resolution;
+
+  for (size_t i = 0; i < resolution; i++) {
+    for (size_t j = 0; j < resolution; j++) {
+      Vertex topLeft = {i * step, j * step, 0, 1, 0, 0, 0, 1, 0};
+      Vertex topRight = {(i + 1) * step, j * step, 0, 1, 0, 0, 0, 1, 0};
+      Vertex bottomLeft = {i * step, (j + 1) * step, 0, 1, 0, 0, 0, 1, 0};
+      Vertex bottomRight = {
+          (i + 1) * step, (j + 1) * step, 0, 1, 0, 0, 0, 1, 0};
+
+      Triangle triangle1 = {topLeft, bottomLeft, topRight};
+      Triangle triangle2 = {topRight, bottomLeft, bottomRight};
+
+      result.push_back(triangle1);
+      result.push_back(triangle2);
+    }
+  }
+
   return result;
 }
 
@@ -308,6 +326,20 @@ void GeneratePlaneBufferData() {
   std::vector<Triangle> mesh = generatePlane(gFloorResolution);
 
   std::vector<GLfloat> vertexDataFloor;
+
+  for (const auto &triangle : mesh) {
+    for (const auto &vertex : triangle.vertices) {
+      vertexDataFloor.push_back(vertex.x);
+      vertexDataFloor.push_back(vertex.y);
+      vertexDataFloor.push_back(vertex.z);
+      vertexDataFloor.push_back(vertex.r);
+      vertexDataFloor.push_back(vertex.g);
+      vertexDataFloor.push_back(vertex.b);
+      vertexDataFloor.push_back(vertex.nx);
+      vertexDataFloor.push_back(vertex.ny);
+      vertexDataFloor.push_back(vertex.nz);
+    }
+  }
 
   // Store size in a global so you can later determine how many
   // vertices to draw in glDrawArrays;
