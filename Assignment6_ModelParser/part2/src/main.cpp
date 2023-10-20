@@ -38,34 +38,6 @@ bool gQuit = false; // If this is quit = 'true' then the program terminates.
 // program object that will be used for our OpenGL draw calls.
 GLuint gGraphicsPipelineShaderProgram = 0;
 
-// OpenGL Objects
-// Vertex Array Object (VAO)
-// Vertex array objects encapsulate all of the items needed to render an object.
-// For example, we may have multiple vertex buffer objects (VBO) related to
-// rendering one object. The VAO allows us to setup the OpenGL state to render
-// that object using the correct layout and correct buffers with one call after
-// being setup.
-GLuint gVertexArrayObject = 0;
-GLuint gVertexArrayObjectFloor = 0;
-// Vertex Buffer Object (VBO)
-// Vertex Buffer Objects store information relating to vertices (e.g. positions,
-// normals, textures) VBOs are our mechanism for arranging geometry on the GPU.
-GLuint gVertexBufferObject = 0;
-GLuint gVertexBufferObjectFloor = 0;
-// Index Buffer Object (IBO)
-// This is used to store the array of indices that we want
-// to draw from, when we do indexed drawing.
-GLuint gIndexBufferObject = 0;
-GLuint gIndexBufferObjectFloor = 0;
-
-// Shaders
-// Here we setup two shaders, a vertex shader and a fragment shader.
-// At a minimum, every Modern OpenGL program needs a vertex and a fragment
-// shader.
-
-bool g_rotatePositive = true;
-float g_uRotate = 0.0f;
-
 // Camera
 Camera gCamera;
 
@@ -297,100 +269,6 @@ void InitializeProgram() {
 void VertexSpecification() { model.loadModelFromFile(filepath); }
 
 /**
- * Setup your geometry during the vertex specification step
- *
- * @return void
- */
-void VertexSpecification2() {
-
-  const std::vector<GLfloat> vertexDataFloor{
-      // 0 - Vertex
-      -5.0f, -1.0f, -5.0f, // Left vertex position
-      1.0f, 0.0f, 0.0f,    // color
-                           // 1 - Vertex
-      5.0f, -1.0f, -5.0f,  // right vertex position
-      0.0f, 1.0f, 0.0f,    // color
-                           // 2 - Vertex
-      -5.0f, -1.0f, 5.0f,  // Top left vertex position
-      0.0f, 1.0f, 0.0f,    // color
-                           // 3 - Vertex
-      5.0f, -1.0f, 5.0f,   // Top-right position
-      1.0f, 0.0f, 0.0f,    // color
-  };
-
-  // Vertex Arrays Object (VAO) Setup
-  // Note: We can think of the VAO as a 'wrapper around' all of the Vertex
-  // Buffer Objects,
-  //       in the sense that it encapsulates all VBO state that we are setting
-  //       up. Thus, it is also important that we glBindVertexArray (i.e. select
-  //       the VAO we want to use) before our vertex buffer object operations.
-  glGenVertexArrays(1, &gVertexArrayObjectFloor);
-  // We bind (i.e. select) to the Vertex Array Object (VAO) that we want to work
-  // withn.
-  glBindVertexArray(gVertexArrayObjectFloor);
-
-  // Vertex Buffer Object (VBO) creation
-  // Create a new vertex buffer object
-  // Note:  We’ll see this pattern of code often in OpenGL of creating and
-  // binding to a buffer.
-  glGenBuffers(1, &gVertexBufferObjectFloor);
-  // Next we will do glBindBuffer.
-  // Bind is equivalent to 'selecting the active buffer object' that we want to
-  // work with in OpenGL.
-  glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObjectFloor);
-  // Now, in our currently binded buffer, we populate the data from our
-  // 'vertexPositions' (which is on the CPU), onto a buffer that will live
-  // on the GPU.
-  glBufferData(
-      GL_ARRAY_BUFFER, // Kind of buffer we are working with
-                       // (e.g. GL_ARRAY_BUFFER or GL_ELEMENT_ARRAY_BUFFER)
-      vertexDataFloor.size() * sizeof(GL_FLOAT), // Size of data in bytes
-      vertexDataFloor.data(),                    // Raw array of data
-      GL_STATIC_DRAW); // How we intend to use the data
-
-  // Index buffer data for a quad
-  const std::vector<GLuint> indexBufferData{2, 0, 1, 3, 2, 1};
-  // Setup the Index Buffer Object (IBO i.e. EBO)
-  glGenBuffers(1, &gIndexBufferObjectFloor);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIndexBufferObjectFloor);
-  // Populate our Index Buffer
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferData.size() * sizeof(GLuint),
-               indexBufferData.data(), GL_STATIC_DRAW);
-
-  // For our Given Vertex Array Object, we need to tell OpenGL
-  // 'how' the information in our buffer will be used.
-  glEnableVertexAttribArray(0);
-  // For the specific attribute in our vertex specification, we use
-  // 'glVertexAttribPointer' to figure out how we are going to move
-  // through the data.
-  glVertexAttribPointer(
-      0, // Attribute 0 corresponds to the enabled glEnableVertexAttribArray
-         // In the future, you'll see in our vertex shader this also correspond
-         // to (layout=0) which selects these attributes.
-      3, // The number of components (e.g. x,y,z = 3 components)
-      GL_FLOAT,             // Type
-      GL_FALSE,             // Is the data normalized
-      sizeof(GL_FLOAT) * 6, // Stride
-      (void *)0             // Offset
-  );
-
-  // Now linking up the attributes in our VAO
-  // Color information
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1,
-                        3, // r,g,b
-                        GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6,
-                        (GLvoid *)(sizeof(GL_FLOAT) * 3));
-
-  // Unbind our currently bound Vertex Array Object
-  glBindVertexArray(0);
-  // Disable any attributes we opened in our Vertex Attribute Arrray,
-  // as we do not want to leave them open.
-  glDisableVertexAttribArray(0);
-  glDisableVertexAttribArray(1);
-}
-
-/**
  * PreDraw
  * Typically we will use this for setting some sort of 'state'
  * Note: some of the calls may take place at different stages (post-processing)
@@ -422,7 +300,7 @@ void PreDraw() {
   glm::vec3 scaleFactor(4.0f, 4.0f, 4.0f);
   model = glm::scale(model, scaleFactor);
 
-  // TODO: Send data to GPU
+  // Send data to GPU
   GLint u_ModelMatrixLocation =
       glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ModelMatrix");
   if (u_ModelMatrixLocation >= 0) {
@@ -447,7 +325,7 @@ void PreDraw() {
   glm::mat4 perspective =
       glm::perspective(glm::radians(45.0f),
                        (float)gScreenWidth / (float)gScreenHeight, 0.1f, 20.0f);
-  // TODO: Send data to GPU
+  // Send data to GPU
   GLint u_ProjectionLocation =
       glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_Projection");
   if (u_ProjectionLocation >= 0) {
@@ -503,25 +381,13 @@ void Input() {
       gQuit = true;
     }
     if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_q) {
-      std::cout << "ESC: Goodbye! (Leaving MainApplicationLoop())" << std::endl;
+      std::cout << "'q': Goodbye! (Leaving MainApplicationLoop())" << std::endl;
       gQuit = true;
     }
   }
 
   // Retrieve keyboard state
   const Uint8 *state = SDL_GetKeyboardState(NULL);
-  if (state[SDL_SCANCODE_UP]) {
-  }
-  if (state[SDL_SCANCODE_DOWN]) {
-  }
-  if (state[SDL_SCANCODE_LEFT]) {
-    g_rotatePositive = false;
-    std::cout << "g_rotatePositive: " << g_rotatePositive << std::endl;
-  }
-  if (state[SDL_SCANCODE_RIGHT]) {
-    g_rotatePositive = true;
-    std::cout << "g_rotatePositive: " << g_rotatePositive << std::endl;
-  }
 
   if (state[SDL_SCANCODE_W]) {
     SDL_Delay(250); // This is hacky in the name of simplicity,
@@ -582,10 +448,6 @@ void CleanUp() {
   SDL_DestroyWindow(gGraphicsApplicationWindow);
   gGraphicsApplicationWindow = nullptr;
 
-  // Delete our OpenGL Objects
-  glDeleteBuffers(1, &gVertexBufferObject);
-  glDeleteVertexArrays(1, &gVertexArrayObject);
-
   // Delete our Graphics pipeline
   glDeleteProgram(gGraphicsPipelineShaderProgram);
 
@@ -599,11 +461,14 @@ void CleanUp() {
  * @return program status
  */
 int main(int argc, char *args[]) {
-  std::cout << "Use wasd keys to move mouse to rotate\n";
-  std::cout << "Press ESC to quit\n";
+  std::cout << "Press 'q' to quit\n";
 
-  //   filepath = "C:\\Users\\kauvo\\Desktop\\23_fall\\cs_5310_cg\\graphics_"
-  //              "prac\\common\\objects\\bunny_centered.obj";
+  // Check if the second argument is provided
+  if (argc < 2) {
+    std::cerr << "Error: No file path provided. Usage: " << args[0]
+              << " <path_to_obj_file>\n";
+    return 1; // Return an error code
+  }
   filepath = args[1];
 
   // 1. Setup the graphics program
@@ -611,7 +476,6 @@ int main(int argc, char *args[]) {
 
   // 2. Setup our geometry
   VertexSpecification();
-  VertexSpecification2();
 
   // 3. Create our graphics pipeline
   // 	- At a minimum, this means the vertex and fragment shader
