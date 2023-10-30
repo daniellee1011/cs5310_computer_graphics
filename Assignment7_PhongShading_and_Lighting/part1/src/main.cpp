@@ -633,7 +633,7 @@ void Input() {
   if (state[SDL_SCANCODE_D]) {
   }
 
-  if (state[SDL_SCANCODE_1]) {
+  if (state[SDL_SCANCODE_TAB]) {
     SDL_Delay(250); // This is hacky in the name of simplicity,
                     // but we just delay the
                     // system by a few milli-seconds to process the
@@ -715,7 +715,7 @@ void CleanUp() {
 int main(int argc, char *args[]) {
   std::cout << "Use w and s keys to move forward and back\n";
   std::cout << "Use up and down to change tessellation\n";
-  std::cout << "Use 1 to toggle wireframe\n";
+  std::cout << "Use TAB to toggle wireframe\n";
   std::cout << "Press ESC to quit\n";
 
   // Check if the second argument is provided
