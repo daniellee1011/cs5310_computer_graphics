@@ -65,6 +65,30 @@ size_t gFloorTriangles = 0;
 OBJModel model;
 std::string filepath;
 
+// Light
+OBJModel lightSourceCube;
+std::string cubeFilePath = "C:\\Users\\kauvo\\Desktop\\github\\monorepo-"
+                           "daniellee1011\\common\\objects\\cube.obj";
+
+struct PointLight {
+  glm::vec3 position;
+  glm::vec3 ambient;
+  glm::vec3 diffuse;
+  glm::vec3 specular;
+  float constant;
+  float linear;
+  float quadratic;
+};
+
+// Initialize with default values.
+PointLight pointLight = {glm::vec3(2.0f, 0.0f, 2.0f),
+                         glm::vec3(0.2f, 0.2f, 0.2f),
+                         glm::vec3(0.5f, 0.5f, 0.5f),
+                         glm::vec3(1.0f, 1.0f, 1.0f),
+                         1.0f,
+                         0.09f,
+                         0.032f};
+
 // ^^^^^^^^^^^^^^^^^^^^^^^^ Globals ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // vvvvvvvvvvvvvvvvvvv Error Handling Routines vvvvvvvvvvvvvvv
@@ -143,7 +167,6 @@ GLuint CompileShader(GLuint type, const std::string &source) {
   glShaderSource(shaderObject, 1, &src, nullptr);
   // Now compile our shader
   glCompileShader(shaderObject);
-
   // Retrieve the result of our compilation
   int result;
   // Our goal with glGetShaderiv is to retrieve the compilation status
@@ -220,7 +243,6 @@ GLuint CreateShaderProgram(const std::string &vertexShaderSource,
  * @return void
  */
 void CreateGraphicsPipeline() {
-
   std::string vertexShaderSource = LoadShaderAsString("./shaders/vert.glsl");
   std::string fragmentShaderSource = LoadShaderAsString("./shaders/frag.glsl");
 
@@ -253,7 +275,7 @@ void InitializeProgram() {
 
   // Create an application window using OpenGL that supports SDL
   gGraphicsApplicationWindow = SDL_CreateWindow(
-      "Tesselation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      "Phong Illumination", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       gScreenWidth, gScreenHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
   // Check if Window did not create.
@@ -300,7 +322,6 @@ float map_linear(float x, float in_min, float in_max, float out_min,
 // rows and columns in the plane (e.g. resolution=00)
 // The plane is 'flat' so the 'z' position will be 0.0f;
 std::vector<Triangle> generatePlane(size_t resolution = 0) {
-
   // Store the resulting plane
   std::vector<Triangle> result;
 
@@ -332,14 +353,10 @@ void GeneratePlaneBufferData() {
  *
  * @return void
  */
-/**
- * Setup your geometry during the vertex specification step
- *
- * @return void
- */
 void VertexSpecification() {
   // Obj load
   model.loadModelFromFile(filepath);
+  lightSourceCube.loadModelFromFile(cubeFilePath);
 
   // Vertex Arrays Object (VAO) Setup
   glGenVertexArrays(1, &gVertexArrayObjectFloor);
@@ -392,7 +409,7 @@ void VertexSpecification() {
  */
 void PreDraw() {
   // Disable depth test and face culling.
-  glEnable(GL_DEPTH_TEST); // NOTE: Need to enable DEPTH Test
+  glEnable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 
   // Set the polygon fill mode
@@ -401,13 +418,45 @@ void PreDraw() {
   // Initialize clear color
   // This is the background of the screen.
   glViewport(0, 0, gScreenWidth, gScreenHeight);
-  glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+  glClearColor(0.2f, 0.2f, 0.2f, 1.f);
 
   // Clear color buffer and Depth Buffer
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   // Use our shader
   glUseProgram(gGraphicsPipelineShaderProgram);
+
+  // Update point light position (e.g., to make it orbit the model).
+  pointLight.position.x = sin(SDL_GetTicks() / 1000.0f) * 2.0f;
+  pointLight.position.z = cos(SDL_GetTicks() / 1000.0f) * 2.0f;
+
+  // Send light properties to shaders.
+  GLint lightPosLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                           "pointLight.position");
+  GLint lightAmbientLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                               "pointLight.ambient");
+  GLint lightDiffuseLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                               "pointLight.diffuse");
+  GLint lightSpecularLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                                "pointLight.specular");
+  GLint lightConstantLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                                "pointLight.constant");
+  GLint lightLinearLoc =
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "pointLight.linear");
+  GLint lightQuadraticLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
+                                                 "pointLight.quadratic");
+
+  glUniform3f(lightPosLoc, pointLight.position.x, pointLight.position.y,
+              pointLight.position.z);
+  glUniform3f(lightAmbientLoc, pointLight.ambient.x, pointLight.ambient.y,
+              pointLight.ambient.z);
+  glUniform3f(lightDiffuseLoc, pointLight.diffuse.x, pointLight.diffuse.y,
+              pointLight.diffuse.z);
+  glUniform3f(lightSpecularLoc, pointLight.specular.x, pointLight.specular.y,
+              pointLight.specular.z);
+  glUniform1f(lightConstantLoc, pointLight.constant);
+  glUniform1f(lightLinearLoc, pointLight.linear);
+  glUniform1f(lightQuadraticLoc, pointLight.quadratic);
 
   // Model transformation by translating our object into world space
   glm::mat4 model =
@@ -434,7 +483,7 @@ void PreDraw() {
     exit(EXIT_FAILURE);
   }
 
-  // Projection matrix (in perspective)
+  // Projection matrix in perspective
   glm::mat4 perspective =
       glm::perspective(glm::radians(45.0f),
                        (float)gScreenWidth / (float)gScreenHeight, 0.1f, 20.0f);
@@ -448,6 +497,40 @@ void PreDraw() {
     std::cout << "Could not find u_Projection, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
+
+  // Retrieve camera position and send it to the fragment shader
+  glm::vec3 cameraPosition =
+      glm::vec3(gCamera.GetEyeXPosition(), gCamera.GetEyeYPosition(),
+                gCamera.GetEyeZPosition());
+
+  GLint cameraPosLocation =
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_CameraPosition");
+  if (cameraPosLocation >= 0) {
+    glUniform3f(cameraPosLocation, cameraPosition.x, cameraPosition.y,
+                cameraPosition.z);
+  } else {
+    std::cout << "Could not find u_CameraPosition, maybe a mispelling?\n";
+    exit(EXIT_FAILURE);
+  }
+}
+
+void PreDrawLightResourceCube() {
+  glUseProgram(gGraphicsPipelineShaderProgram);
+
+  // Render the light source cube
+  glm::mat4 lightSourceModelMatrix =
+      glm::translate(glm::mat4(1.0f), pointLight.position);
+  lightSourceModelMatrix = glm::scale(
+      lightSourceModelMatrix, glm::vec3(0.1f)); // Scale down to make it small
+  GLint u_ModelMatrixLocation =
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ModelMatrix");
+  glUniformMatrix4fv(u_ModelMatrixLocation, 1, GL_FALSE,
+                     &lightSourceModelMatrix[0][0]);
+}
+
+void DrawLightResourceCube() {
+  lightSourceCube.render();
+  glUseProgram(0);
 }
 
 /**
@@ -459,7 +542,7 @@ void PreDraw() {
  * @return void
  */
 void Draw() {
-  // OBj render
+  // Render the obj file
   model.render();
 
   // Enable our attributes
@@ -540,10 +623,10 @@ void Input() {
   // Camera
   // Update our position of the camera
   if (state[SDL_SCANCODE_W]) {
-    gCamera.MoveForward(0.1f);
+    gCamera.MoveForward(0.01f);
   }
   if (state[SDL_SCANCODE_S]) {
-    gCamera.MoveBackward(0.1f);
+    gCamera.MoveBackward(0.01f);
   }
   if (state[SDL_SCANCODE_A]) {
   }
@@ -592,6 +675,9 @@ void MainLoop() {
     //      The pipeline that is utilized is whatever 'glUseProgram' is
     //      currently binded.
     Draw();
+
+    PreDrawLightResourceCube();
+    DrawLightResourceCube();
 
     // Update screen of our specified window
     SDL_GL_SwapWindow(gGraphicsApplicationWindow);

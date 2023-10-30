@@ -26,8 +26,12 @@ void OBJModel::setupBuffers() {
   glEnableVertexAttribArray(0);
 
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, normal));
+                        (void *)offsetof(Vertex, color));
   glEnableVertexAttribArray(1);
+
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, normal));
+  glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
@@ -38,10 +42,11 @@ void OBJModel::render() const {
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
   glBindVertexArray(0);
+}
 
-  // Stop using our current graphics pipeline
-  // Note: This is not necessary if we only have one graphics pipeline.
-  glUseProgram(0);
+glm::vec3 generateColor(const glm::vec3 &normal) {
+  glm::vec3 color = (normal + 1.0f) * 0.5f;
+  return color;
 }
 
 // Loads model data from an OBJ file.
@@ -77,9 +82,12 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
       ss >> v1 >> slash >> slash >> n1 >> v2 >> slash >> slash >> n2 >> v3 >>
           slash >> slash >> n3;
 
-      vertices.push_back({temp_vertices[v1 - 1], temp_normals[n1 - 1]});
-      vertices.push_back({temp_vertices[v2 - 1], temp_normals[n2 - 1]});
-      vertices.push_back({temp_vertices[v3 - 1], temp_normals[n3 - 1]});
+      vertices.push_back({temp_vertices[v1 - 1], temp_normals[n1 - 1],
+                          generateColor(temp_vertices[v1 - 1])});
+      vertices.push_back({temp_vertices[v2 - 1], temp_normals[n2 - 1],
+                          generateColor(temp_vertices[v2 - 1])});
+      vertices.push_back({temp_vertices[v3 - 1], temp_normals[n3 - 1],
+                          generateColor(temp_vertices[v3 - 1])});
     }
   }
   objFile.close();
