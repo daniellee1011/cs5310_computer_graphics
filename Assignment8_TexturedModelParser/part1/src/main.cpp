@@ -80,15 +80,6 @@ struct PointLight {
   float quadratic;
 };
 
-// Initialize with default values.
-PointLight pointLight = {glm::vec3(2.0f, 0.0f, 2.0f),
-                         glm::vec3(0.2f, 0.2f, 0.2f),
-                         glm::vec3(0.5f, 0.5f, 0.5f),
-                         glm::vec3(1.0f, 1.0f, 1.0f),
-                         1.0f,
-                         0.09f,
-                         0.032f};
-
 // ^^^^^^^^^^^^^^^^^^^^^^^^ Globals ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // vvvvvvvvvvvvvvvvvvv Error Handling Routines vvvvvvvvvvvvvvv
@@ -426,38 +417,6 @@ void PreDraw() {
   // Use our shader
   glUseProgram(gGraphicsPipelineShaderProgram);
 
-  // Update point light position (e.g., to make it orbit the model).
-  pointLight.position.x = sin(SDL_GetTicks() / 1000.0f) * 2.0f;
-  pointLight.position.z = cos(SDL_GetTicks() / 1000.0f) * 2.0f;
-
-  // Send light properties to shaders.
-  GLint lightPosLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                           "pointLight.position");
-  GLint lightAmbientLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                               "pointLight.ambient");
-  GLint lightDiffuseLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                               "pointLight.diffuse");
-  GLint lightSpecularLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                                "pointLight.specular");
-  GLint lightConstantLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                                "pointLight.constant");
-  GLint lightLinearLoc =
-      glGetUniformLocation(gGraphicsPipelineShaderProgram, "pointLight.linear");
-  GLint lightQuadraticLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram,
-                                                 "pointLight.quadratic");
-
-  glUniform3f(lightPosLoc, pointLight.position.x, pointLight.position.y,
-              pointLight.position.z);
-  glUniform3f(lightAmbientLoc, pointLight.ambient.x, pointLight.ambient.y,
-              pointLight.ambient.z);
-  glUniform3f(lightDiffuseLoc, pointLight.diffuse.x, pointLight.diffuse.y,
-              pointLight.diffuse.z);
-  glUniform3f(lightSpecularLoc, pointLight.specular.x, pointLight.specular.y,
-              pointLight.specular.z);
-  glUniform1f(lightConstantLoc, pointLight.constant);
-  glUniform1f(lightLinearLoc, pointLight.linear);
-  glUniform1f(lightQuadraticLoc, pointLight.quadratic);
-
   // Model transformation by translating our object into world space
   glm::mat4 model =
       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -512,25 +471,6 @@ void PreDraw() {
     std::cout << "Could not find u_CameraPosition, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-}
-
-void PreDrawLightResourceCube() {
-  glUseProgram(gGraphicsPipelineShaderProgram);
-
-  // Render the light source cube
-  glm::mat4 lightSourceModelMatrix =
-      glm::translate(glm::mat4(1.0f), pointLight.position);
-  lightSourceModelMatrix = glm::scale(
-      lightSourceModelMatrix, glm::vec3(0.1f)); // Scale down to make it small
-  GLint u_ModelMatrixLocation =
-      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ModelMatrix");
-  glUniformMatrix4fv(u_ModelMatrixLocation, 1, GL_FALSE,
-                     &lightSourceModelMatrix[0][0]);
-}
-
-void DrawLightResourceCube() {
-  lightSourceCube.render();
-  glUseProgram(0);
 }
 
 /**
@@ -675,9 +615,6 @@ void MainLoop() {
     //      The pipeline that is utilized is whatever 'glUseProgram' is
     //      currently binded.
     Draw();
-
-    PreDrawLightResourceCube();
-    DrawLightResourceCube();
 
     // Update screen of our specified window
     SDL_GL_SwapWindow(gGraphicsApplicationWindow);
