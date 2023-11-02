@@ -12,6 +12,7 @@
 // C++ Standard Template Library (STL)
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -36,11 +37,18 @@ private:
     glm::vec3 position;
     glm::vec3 color;
     glm::vec3 normal;
+    glm::vec2 textCoord;
+
+    // Vertex(glm::vec3, )
   };
 
   std::vector<Vertex> vertices;
   unsigned int vao;
   unsigned int vbo;
+
+  GLuint ebo;
+  std::vector<GLuint> indices;
+  std::map<Vertex, GLuint> uniqueVertices;
 
   // Initializes OpenGL buffers and attribute pointers.
   void setupBuffers();
