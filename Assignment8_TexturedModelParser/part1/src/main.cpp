@@ -62,13 +62,14 @@ size_t gFloorResolution = 10;
 size_t gFloorTriangles = 0;
 
 // Obj file
-OBJModel model;
+OBJModel objmodel;
 std::string filepath;
 
 // Light
-OBJModel lightSourceCube;
-std::string cubeFilePath = "C:\\Users\\kauvo\\Desktop\\github\\monorepo-"
-                           "daniellee1011\\common\\objects\\cube.obj";
+// OBJModel lightSourceCube;
+// std::string cubeFilePath =
+// "C:\\Users\\kauvo\\Desktop\\github\\monorepo-"
+// "daniellee1011\\common\\objects\\cube.obj";
 
 struct PointLight {
   glm::vec3 position;
@@ -345,9 +346,15 @@ void GeneratePlaneBufferData() {
  * @return void
  */
 void VertexSpecification() {
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 1: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Obj load
-  model.loadModelFromFile(filepath);
-  lightSourceCube.loadModelFromFile(cubeFilePath);
+  objmodel.loadModelFromFile(filepath);
+  //   lightSourceCube.loadModelFromFile(cubeFilePath);
 
   // Vertex Arrays Object (VAO) Setup
   glGenVertexArrays(1, &gVertexArrayObjectFloor);
@@ -356,39 +363,69 @@ void VertexSpecification() {
   glBindVertexArray(gVertexArrayObjectFloor);
   // Vertex Buffer Object (VBO) creation
   glGenBuffers(1, &gVertexBufferObjectFloor);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 2: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Generate our data for the buffer
   GeneratePlaneBufferData();
-
-  // =============================
-  // offsets every 3 floats
-  // v     v     v
-  //
-  // x,y,z,r,g,b,nx,ny,nz
-  //
-  // |------------------| strides is '9' floats
-  //
-  // ============================
-  // Position information (x,y,z)
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 3: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
                         (void *)0);
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 4: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Color information (r,g,b)
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
                         (GLvoid *)(sizeof(GL_FLOAT) * 3));
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 5: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Normal information (nx,ny,nz)
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
                         (GLvoid *)(sizeof(GL_FLOAT) * 6));
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 6: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
 
-  // Unbind our currently bound Vertex Array Object
-  glBindVertexArray(0);
   // Disable any attributes we opened in our Vertex Attribute Arrray,
   // as we do not want to leave them open.
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 7: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
+  // Unbind our currently bound Vertex Array Object
+  glBindVertexArray(0);
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during VertexSpecification 8: " << err
+              << std::endl;
+    return; // or handle the error as appropriate
+  }
 }
 
 /**
@@ -399,24 +436,49 @@ void VertexSpecification() {
  * @return void
  */
 void PreDraw() {
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 1: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Disable depth test and face culling.
   glEnable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 2: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Set the polygon fill mode
   glPolygonMode(GL_FRONT_AND_BACK, gPolygonMode);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 3: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Initialize clear color
   // This is the background of the screen.
   glViewport(0, 0, gScreenWidth, gScreenHeight);
   glClearColor(0.2f, 0.2f, 0.2f, 1.f);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 4: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Clear color buffer and Depth Buffer
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 5: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Use our shader
   glUseProgram(gGraphicsPipelineShaderProgram);
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 6: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Model transformation by translating our object into world space
   glm::mat4 model =
       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -430,7 +492,11 @@ void PreDraw() {
     std::cout << "Could not find u_ModelMatrix, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 7: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Update the View Matrix
   GLint u_ViewMatrixLocation =
       glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ViewMatrix");
@@ -441,7 +507,11 @@ void PreDraw() {
     std::cout << "Could not find u_ViewMatrix, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 8: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Projection matrix in perspective
   glm::mat4 perspective =
       glm::perspective(glm::radians(45.0f),
@@ -456,7 +526,11 @@ void PreDraw() {
     std::cout << "Could not find u_Projection, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 9: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
   // Retrieve camera position and send it to the fragment shader
   glm::vec3 cameraPosition =
       glm::vec3(gCamera.GetEyeXPosition(), gCamera.GetEyeYPosition(),
@@ -471,6 +545,40 @@ void PreDraw() {
     std::cout << "Could not find u_CameraPosition, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 10: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
+  //   objmodel.printUVs();
+  Material modelMaterial = objmodel.getCurrentMaterial();
+
+  if (!modelMaterial.diffuseMap.isEmpty()) {
+    // std::cout << "main.cpp: diffuseMap is not empty" << std::endl;
+    modelMaterial.diffuseMap.createTexture();
+    // std::cout << "diffuseMap: " << std::endl;
+    // std::vector<uint8_t> pixelData = modelMaterial.diffuseMap.pixelData();
+    // for (int i = 0; i < 30;
+    //      i++) { // Since RGB is 3 values, we'll get the first 10 pixels
+    //   std::cout << (int)pixelData[i] << " ";
+    // }
+    // std::cout << std::endl;
+
+    glActiveTexture(GL_TEXTURE0); // Use texture unit 0
+    glBindTexture(GL_TEXTURE_2D, modelMaterial.diffuseMap.getTextureID());
+    // std::cout << "diffuseMap: textureID: "
+    //           << modelMaterial.diffuseMap.getTextureID() << std::endl;
+    // Set the uniform for the shader to use texture unit 0
+    glUniform1i(
+        glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_diffuseMap"),
+        0);
+  }
+
+  err = glGetError();
+  if (err != GL_NO_ERROR) {
+    std::cerr << "OpenGL error during PreDraw 11: " << err << std::endl;
+    return; // or handle the error as appropriate
+  }
 }
 
 /**
@@ -483,7 +591,9 @@ void PreDraw() {
  */
 void Draw() {
   // Render the obj file
-  model.render();
+  GLuint objmodelVAO = objmodel.getVAO();
+  glBindVertexArray(objmodelVAO);
+  objmodel.render();
 
   // Enable our attributes
   glBindVertexArray(gVertexArrayObjectFloor);

@@ -1,6 +1,8 @@
 #ifndef OBJMODEL_HPP
 #define OBJMODEL_HPP
 
+#include "MTLReader.hpp"
+
 // Third Party Libraries
 #include <SDL2/SDL.h>
 #include <glad/glad.h>
@@ -14,6 +16,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // The OBJModel class represents a 3D model loaded from an OBJ file.
@@ -30,6 +33,9 @@ public:
   void render() const;
   // Loads a model from the provided OBJ file path.
   void loadModelFromFile(const std::string &filepath);
+  const Material &getCurrentMaterial() const { return currentMaterial; }
+  const unsigned int &getVAO() const { return vao; }
+  void printUVs() const;
 
 private:
   // Represents a single vertex with position and normal data.
@@ -38,17 +44,17 @@ private:
     glm::vec3 color;
     glm::vec3 normal;
     glm::vec2 textCoord;
-
-    // Vertex(glm::vec3, )
   };
 
   std::vector<Vertex> vertices;
   unsigned int vao;
   unsigned int vbo;
 
-  GLuint ebo;
-  std::vector<GLuint> indices;
-  std::map<Vertex, GLuint> uniqueVertices;
+  // Add a member to store materials
+  //   std::unordered_map<std::string, Material> materials;
+
+  // Add a member to keep track of the current material name
+  Material currentMaterial;
 
   // Initializes OpenGL buffers and attribute pointers.
   void setupBuffers();
