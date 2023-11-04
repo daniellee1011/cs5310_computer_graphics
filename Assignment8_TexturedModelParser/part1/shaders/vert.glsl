@@ -1,12 +1,10 @@
 #version 410 core
 
 layout(location=0) in vec3 position;
-layout(location=1) in vec3 vertexColors;
-layout(location=2) in vec3 vertexNormals;
-layout(location=3) in vec2 texCoords; // Added texture coordinates
+layout(location=1) in vec3 vertexNormals;
+layout(location=2) in vec2 texCoords; // Added texture coordinates
 
 // Pass to fragment shader
-out vec3 v_vertexColors;
 out vec3 v_vertexNormals;
 out vec2 v_texCoords; // Passed to fragment shader
 out vec3 FragPos;
@@ -17,7 +15,6 @@ uniform mat4 u_Projection;
 
 void main()
 {
-  v_vertexColors = vertexColors;
   v_vertexNormals = vertexNormals;
   v_texCoords = texCoords; // Pass the texture coordinates
 

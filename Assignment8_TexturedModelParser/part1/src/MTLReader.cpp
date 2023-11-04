@@ -38,14 +38,7 @@ bool MTLReader::loadMaterialsFromFile(const std::string &filepath) {
   Material currentMaterial;
   bool firstMaterial = true;
 
-  // In the OBJModel::loadModelFromFile, when calling
-  // mtlReader.loadMaterialsFromFile
-  std::cout << "MTLReader: Current path: " << std::filesystem::current_path()
-            << '\n';
-  std::cout << "MTLReader: filepath: " << filepath << std::endl;
-
   std::string directory = filepath.substr(0, filepath.find_last_of("/\\") + 1);
-  std::cout << "MTLReader: directory: " << directory << std::endl;
 
   while (getline(file, line)) {
     std::istringstream iss(line);
@@ -59,9 +52,6 @@ bool MTLReader::loadMaterialsFromFile(const std::string &filepath) {
       } else {
         firstMaterial = false;
       }
-      std::cout << "MTLReader: New material: " << currentMaterial.name
-                << std::endl;
-      // Initialize a new material
       currentMaterial = Material();
       iss >> currentMaterial.name;
     } else if (prefix == "Ns") {

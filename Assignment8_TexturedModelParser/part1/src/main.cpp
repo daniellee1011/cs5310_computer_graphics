@@ -34,21 +34,12 @@ SDL_GLContext gOpenGLContext = nullptr;
 bool gQuit = false; // If this is quit = 'true' then the program terminates.
 
 // shader
-// The following stores the a unique id for the graphics pipeline
-// program object that will be used for our OpenGL draw calls.
 GLuint gGraphicsPipelineShaderProgram = 0;
 
-// OpenGL Objects
 // Vertex Array Object (VAO)
-// Vertex array objects encapsulate all of the items needed to render an object.
-// For example, we may have multiple vertex buffer objects (VBO) related to
-// rendering one object. The VAO allows us to setup the OpenGL state to render
-// that object using the correct layout and correct buffers with one call after
-// being setup.
 GLuint gVertexArrayObjectFloor = 0;
+
 // Vertex Buffer Object (VBO)
-// Vertex Buffer Objects store information relating to vertices (e.g. positions,
-// normals, textures) VBOs are our mechanism for arranging geometry on the GPU.
 GLuint gVertexBufferObjectFloor = 0;
 
 // Camera
@@ -64,24 +55,6 @@ size_t gFloorTriangles = 0;
 // Obj file
 OBJModel objmodel;
 std::string filepath;
-
-// Light
-// OBJModel lightSourceCube;
-// std::string cubeFilePath =
-// "C:\\Users\\kauvo\\Desktop\\github\\monorepo-"
-// "daniellee1011\\common\\objects\\cube.obj";
-
-struct PointLight {
-  glm::vec3 position;
-  glm::vec3 ambient;
-  glm::vec3 diffuse;
-  glm::vec3 specular;
-  float constant;
-  float linear;
-  float quadratic;
-};
-
-// ^^^^^^^^^^^^^^^^^^^^^^^^ Globals ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // vvvvvvvvvvvvvvvvvvv Error Handling Routines vvvvvvvvvvvvvvv
 static void GLClearAllErrors() {
@@ -345,88 +318,7 @@ void GeneratePlaneBufferData() {
  *
  * @return void
  */
-void VertexSpecification() {
-  GLenum err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 1: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Obj load
-  objmodel.loadModelFromFile(filepath);
-  //   lightSourceCube.loadModelFromFile(cubeFilePath);
-
-  // Vertex Arrays Object (VAO) Setup
-  glGenVertexArrays(1, &gVertexArrayObjectFloor);
-  // We bind (i.e. select) to the Vertex Array Object (VAO) that we want to work
-  // withn.
-  glBindVertexArray(gVertexArrayObjectFloor);
-  // Vertex Buffer Object (VBO) creation
-  glGenBuffers(1, &gVertexBufferObjectFloor);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 2: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Generate our data for the buffer
-  GeneratePlaneBufferData();
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 3: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
-                        (void *)0);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 4: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Color information (r,g,b)
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
-                        (GLvoid *)(sizeof(GL_FLOAT) * 3));
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 5: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Normal information (nx,ny,nz)
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 9,
-                        (GLvoid *)(sizeof(GL_FLOAT) * 6));
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 6: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-
-  // Disable any attributes we opened in our Vertex Attribute Arrray,
-  // as we do not want to leave them open.
-  glDisableVertexAttribArray(0);
-  glDisableVertexAttribArray(1);
-  glDisableVertexAttribArray(2);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 7: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Unbind our currently bound Vertex Array Object
-  glBindVertexArray(0);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during VertexSpecification 8: " << err
-              << std::endl;
-    return; // or handle the error as appropriate
-  }
-}
+void VertexSpecification() { objmodel.loadModelFromFile(filepath); }
 
 /**
  * PreDraw
@@ -472,6 +364,7 @@ void PreDraw() {
     std::cerr << "OpenGL error during PreDraw 5: " << err << std::endl;
     return; // or handle the error as appropriate
   }
+
   // Use our shader
   glUseProgram(gGraphicsPipelineShaderProgram);
   err = glGetError();
@@ -479,6 +372,7 @@ void PreDraw() {
     std::cerr << "OpenGL error during PreDraw 6: " << err << std::endl;
     return; // or handle the error as appropriate
   }
+
   // Model transformation by translating our object into world space
   glm::mat4 model =
       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -550,28 +444,22 @@ void PreDraw() {
     std::cerr << "OpenGL error during PreDraw 10: " << err << std::endl;
     return; // or handle the error as appropriate
   }
-  //   objmodel.printUVs();
+
   Material modelMaterial = objmodel.getCurrentMaterial();
 
   if (!modelMaterial.diffuseMap.isEmpty()) {
-    // std::cout << "main.cpp: diffuseMap is not empty" << std::endl;
     modelMaterial.diffuseMap.createTexture();
-    // std::cout << "diffuseMap: " << std::endl;
-    // std::vector<uint8_t> pixelData = modelMaterial.diffuseMap.pixelData();
-    // for (int i = 0; i < 30;
-    //      i++) { // Since RGB is 3 values, we'll get the first 10 pixels
-    //   std::cout << (int)pixelData[i] << " ";
-    // }
-    // std::cout << std::endl;
+    // modelMaterial.diffuseMap.print();
+    GLint uniformLocation =
+        glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_diffuseMap");
 
+    if (uniformLocation == -1) {
+      std::cerr << "Failed to get the location of 'u_diffuseMap'" << std::endl;
+    } else {
+      glUniform1i(uniformLocation, 0);
+    }
     glActiveTexture(GL_TEXTURE0); // Use texture unit 0
     glBindTexture(GL_TEXTURE_2D, modelMaterial.diffuseMap.getTextureID());
-    // std::cout << "diffuseMap: textureID: "
-    //           << modelMaterial.diffuseMap.getTextureID() << std::endl;
-    // Set the uniform for the shader to use texture unit 0
-    glUniform1i(
-        glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_diffuseMap"),
-        0);
   }
 
   err = glGetError();
@@ -591,15 +479,13 @@ void PreDraw() {
  */
 void Draw() {
   // Render the obj file
-  GLuint objmodelVAO = objmodel.getVAO();
-  glBindVertexArray(objmodelVAO);
   objmodel.render();
 
   // Enable our attributes
-  glBindVertexArray(gVertexArrayObjectFloor);
+  //   glBindVertexArray(gVertexArrayObjectFloor);
 
   // Render data
-  glDrawArrays(GL_TRIANGLES, 0, gFloorTriangles);
+  //   glDrawArrays(GL_TRIANGLES, 0, gFloorTriangles);
 
   // Stop using our current graphics pipeline
   // Note: This is not necessary if we only have one graphics pipeline.
@@ -703,30 +589,14 @@ void Input() {
  * @return void
  */
 void MainLoop() {
-
-  // Little trick to map mouse to center of screen always.
-  // Useful for handling 'mouselook'
-  // This works because we effectively 're-center' our mouse at the start
-  // of every frame prior to detecting any mouse motion.
   SDL_WarpMouseInWindow(gGraphicsApplicationWindow, gScreenWidth / 2,
                         gScreenHeight / 2);
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
-  // While application is running
   while (!gQuit) {
-    // Handle Input
     Input();
-    // Setup anything (i.e. OpenGL State) that needs to take
-    // place before draw calls
     PreDraw();
-    // Draw Calls in OpenGL
-    // When we 'draw' in OpenGL, this activates the graphics pipeline.
-    // i.e. when we use glDrawElements or glDrawArrays,
-    //      The pipeline that is utilized is whatever 'glUseProgram' is
-    //      currently binded.
     Draw();
-
-    // Update screen of our specified window
     SDL_GL_SwapWindow(gGraphicsApplicationWindow);
   }
 }

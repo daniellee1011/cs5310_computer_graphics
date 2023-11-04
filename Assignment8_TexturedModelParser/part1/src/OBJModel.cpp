@@ -30,16 +30,12 @@ void OBJModel::setupBuffers() {
   glEnableVertexAttribArray(0);
 
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, color));
-  glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void *)offsetof(Vertex, normal));
   glEnableVertexAttribArray(2);
 
   // UVs (textCoords)
   glVertexAttribPointer(
-      3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
       (void *)offsetof(Vertex, textCoord)); // Rename to texCoord for clarity.
   glEnableVertexAttribArray(3);
 
@@ -51,7 +47,9 @@ void OBJModel::setupBuffers() {
 void OBJModel::render() const {
   glBindVertexArray(vao);
 
-  glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+  //   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+  glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+
   glBindVertexArray(0);
 }
 
@@ -89,9 +87,9 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
       if (!materialsLoaded) {
         std::cerr << "Failed to load materials from MTL file." << std::endl;
       } else {
-        std::cout << "Successfully opened MTL file." << std::endl;
+        // std::cout << "Successfully opened MTL file." << std::endl;
       }
-      mtlReader.printAllMaterials();
+      //   mtlReader.printAllMaterials();
     } else if (prefix == "usemtl") {
       std::string matName;
       ss >> matName;
@@ -137,29 +135,11 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
         if (!temp_normals.empty()) {
           vertex.normal = temp_normals[v.z - 1];
         }
-
-        // Apply the current material to the vertex if one is set
-        if (!currentMaterial.name.empty()) {
-          vertex.color =
-              glm::vec3(currentMaterial.diffuse[0], currentMaterial.diffuse[1],
-                        currentMaterial.diffuse[2]);
-        }
-
         vertices.push_back(vertex);
       }
     }
   }
   objFile.close();
-
-  for (const auto &vertex : vertices) {
-    std::cout << "Vertex Position: " << vertex.position.x << ", "
-              << vertex.position.y << ", " << vertex.position.z << std::endl;
-    std::cout << "Texture Coord: " << vertex.textCoord.x << ", "
-              << vertex.textCoord.y << std::endl;
-    std::cout << "Normal: " << vertex.normal.x << ", " << vertex.normal.y
-              << ", " << vertex.normal.z << std::endl;
-    std::cout << "------------------------------------" << std::endl;
-  }
 
   setupBuffers();
 }

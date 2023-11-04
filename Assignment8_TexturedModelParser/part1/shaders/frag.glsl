@@ -1,6 +1,5 @@
 #version 410 core
 
-in vec3 v_vertexColors;
 in vec3 v_vertexNormals;
 in vec2 v_texCoords; // Receive texture coordinates
 in vec3 FragPos;
@@ -26,7 +25,8 @@ void main()
     vec3 result = sampledDiffuse;
 
     color = vec4(result, 1.0f);
-    // color = vec4(v_texCoords, 0.0, 1.0); // This will show UVs as red-green color
+    // color = texture(u_diffuseMap, v_texCoords);
+    // color = vec4(v_texCoords, 0.0, 1.0); // UVs as red-green color
     // color = vec4(1.0, 0.0, 0.0, 1.0); // Red color
 
     // color = vec4(sampledDiffuse, 1.0);

@@ -41,7 +41,6 @@ private:
   // Represents a single vertex with position and normal data.
   struct Vertex {
     glm::vec3 position;
-    glm::vec3 color;
     glm::vec3 normal;
     glm::vec2 textCoord;
   };
@@ -49,9 +48,6 @@ private:
   std::vector<Vertex> vertices;
   unsigned int vao;
   unsigned int vbo;
-
-  // Add a member to store materials
-  //   std::unordered_map<std::string, Material> materials;
 
   // Add a member to keep track of the current material name
   Material currentMaterial;
