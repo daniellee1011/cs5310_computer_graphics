@@ -1,33 +1,79 @@
-#version 410 core
+// ====================================================
+#version 330 core
 
-in vec3 v_vertexNormals;
-in vec2 v_texCoords; // Receive texture coordinates
-in vec3 FragPos;
-
-out vec4 color;
+// ======================= uniform ====================
+// Our light sources
+uniform vec3 lightColor;
+uniform vec3 lightPos;
+uniform float ambientIntensity;
+// Used for our specular highlights
+uniform mat4 view;
+// If we have texture coordinates, they are stored in this sampler.
+uniform vec3 ka;
+uniform vec3 kd;
+uniform vec3 ks;
+uniform sampler2D u_DiffuseMap;
+uniform sampler2D u_BumpMap;
+uniform sampler2D u_SpecularMap;
 
 uniform vec3 u_CameraPosition;
-uniform sampler2D u_diffuseMap; // Texture sampler for the diffuse map
-uniform sampler2D u_bumpMap;    // Texture sampler for the bump map
-uniform sampler2D u_specularMap;// Texture sampler for the specular map
+
+// ======================= IN =========================
+in vec3 myNormal; // Import our normal data
+in vec2 v_texCoord; // Import our texture coordinates from vertex shader
+in vec3 FragPos; // Import the fragment position
+
+// ======================= out ========================
+// The final output color of each 'fragment' from our fragment shader.
+out vec4 FragColor;
+
+// ======================= Globals ====================
+// We will have another constant for specular strength
+float specularStrength = 0.5f;
+
 
 void main()
 {
-    vec3 norm = normalize(v_vertexNormals);
+    // Store our final texture color
+    vec3 diffuseColor;
+    diffuseColor = texture(u_DiffuseMap, v_texCoord).rgb;
 
-    // Texture sampling
-    vec3 sampledDiffuse = texture(u_diffuseMap, v_texCoords).rgb;
-    vec3 sampledSpecular = texture(u_specularMap, v_texCoords).rgb;
+    // (1) Compute ambient light
+    vec3 ambient = ambientIntensity * lightColor;
 
+    // (2) Compute diffuse light
+
+    // Compute the normal direction
+    vec3 norm = normalize(myNormal);
+    // From our lights position and the fragment, we can get
+    // a vector indicating direction
+    // Note it is always good to 'normalize' values.
+    vec3 lightDir = normalize(lightPos - FragPos);
+    // Now we can compute the diffuse light impact
+    float diffImpact = max(dot(norm, lightDir), 0.0);
+    vec3 diffuseLight = diffImpact * lightColor;
+
+    // (3) Compute Specular lighting
+    vec3 viewPos = vec3(0.0,0.0,0.0);
     vec3 viewDir = normalize(u_CameraPosition - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
 
-    // vec3 result = sampledDiffuse + sampledSpecular;
-    vec3 result = sampledDiffuse;
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;
 
-    color = vec4(result, 1.0f);
-    // color = texture(u_diffuseMap, v_texCoords);
-    // color = vec4(v_texCoords, 0.0, 1.0); // UVs as red-green color
-    // color = vec4(1.0, 0.0, 0.0, 1.0); // Red color
+    // Our final color is now based on the texture.
+    // That is set by the diffuseColor
+    vec3 Lighting = diffuseLight + ambient + specular;
 
-    // color = vec4(sampledDiffuse, 1.0);
+    // Final color + "how dark or light to make fragment"
+    if(gl_FrontFacing){
+        FragColor = vec4(diffuseColor * Lighting,1.0);
+    }else{
+        // Additionally color the back side the same color
+         FragColor = vec4(diffuseColor * Lighting,1.0);
+    }
+
+    vec3 texColor = texture(u_DiffuseMap, v_texCoord).rgb;
+    FragColor = vec4(texColor, 1.0);
 }
+// ==================================================================

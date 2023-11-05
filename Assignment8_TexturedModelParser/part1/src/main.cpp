@@ -1,3 +1,4 @@
+
 /* Compilation on Linux:
  g++ -std=c++17 ./src/*.cpp -o prog -I ./include/ -I./../common/thirdparty/
  -lSDL2 -ldl
@@ -20,6 +21,7 @@
 // Our libraries
 #include "Camera.hpp"
 #include "OBJModel.hpp"
+#include "Texture.hpp"
 
 // vvvvvvvvvvvvvvvvvvvvvvvvvv Globals vvvvvvvvvvvvvvvvvvvvvvvvvv
 // Globals generally are prefixed with 'g' in this application.
@@ -34,27 +36,48 @@ SDL_GLContext gOpenGLContext = nullptr;
 bool gQuit = false; // If this is quit = 'true' then the program terminates.
 
 // shader
+// The following stores the a unique id for the graphics pipeline
+// program object that will be used for our OpenGL draw calls.
 GLuint gGraphicsPipelineShaderProgram = 0;
 
+// OpenGL Objects
 // Vertex Array Object (VAO)
-GLuint gVertexArrayObjectFloor = 0;
-
+// Vertex array objects encapsulate all of the items needed to render an object.
+// For example, we may have multiple vertex buffer objects (VBO) related to
+// rendering one object. The VAO allows us to setup the OpenGL state to render
+// that object using the correct layout and correct buffers with one call after
+// being setup.
+GLuint gVertexArrayObject = 0;
 // Vertex Buffer Object (VBO)
-GLuint gVertexBufferObjectFloor = 0;
+// Vertex Buffer Objects store information relating to vertices (e.g. positions,
+// normals, textures) VBOs are our mechanism for arranging geometry on the GPU.
+GLuint gVertexBufferObject = 0;
+// Index Buffer Object (IBO)
+// This is used to store the array of indices that we want
+// to draw from, when we do indexed drawing.
+GLuint gIndexBufferObject = 0;
+
+// Shaders
+// Here we setup two shaders, a vertex shader and a fragment shader.
+// At a minimum, every Modern OpenGL program needs a vertex and a fragment
+// shader.
+float g_uOffset = -2.0f;
+float g_uRotate = 0.0f;
 
 // Camera
 Camera gCamera;
 
 // Draw wireframe mode
-GLenum gPolygonMode = GL_LINE;
-
-// Floor resolution
-size_t gFloorResolution = 10;
-size_t gFloorTriangles = 0;
+GLenum gPolygonMode = GL_FILL;
 
 // Obj file
-OBJModel objmodel;
+OBJModel objModel;
 std::string filepath;
+
+// Texture
+Texture gTexture;
+
+// ^^^^^^^^^^^^^^^^^^^^^^^^ Globals ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // vvvvvvvvvvvvvvvvvvv Error Handling Routines vvvvvvvvvvvvvvv
 static void GLClearAllErrors() {
@@ -240,7 +263,7 @@ void InitializeProgram() {
 
   // Create an application window using OpenGL that supports SDL
   gGraphicsApplicationWindow = SDL_CreateWindow(
-      "Phong Illumination", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      "Textured", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       gScreenWidth, gScreenHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
   // Check if Window did not create.
@@ -265,60 +288,18 @@ void InitializeProgram() {
   }
 }
 
-struct Vertex {
-  float x, y, z;    // position
-  float r, g, b;    // color
-  float nx, ny, nz; // normals
-};
-
-struct Triangle {
-  Vertex vertices[3]; // 3 vertices per triangle
-};
-
-// Return a value that is a mapping between the current range and a new range.
-// Source: https://www.arduino.cc/reference/en/language/functions/math/map/
-float map_linear(float x, float in_min, float in_max, float out_min,
-                 float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-  ;
-}
-
-// Pass in an unsigned integer representing the number of
-// rows and columns in the plane (e.g. resolution=00)
-// The plane is 'flat' so the 'z' position will be 0.0f;
-std::vector<Triangle> generatePlane(size_t resolution = 0) {
-  // Store the resulting plane
-  std::vector<Triangle> result;
-
-  return result;
-}
-
-// Regenerate the flat plane
-void GeneratePlaneBufferData() {
-  // Generate a plane with the resolution
-  std::vector<Triangle> mesh = generatePlane(gFloorResolution);
-
-  std::vector<GLfloat> vertexDataFloor;
-
-  // Store size in a global so you can later determine how many
-  // vertices to draw in glDrawArrays;
-  gFloorTriangles = vertexDataFloor.size();
-
-  glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObjectFloor);
-  glBufferData(
-      GL_ARRAY_BUFFER, // Kind of buffer we are working with
-                       // (e.g. GL_ARRAY_BUFFER or GL_ELEMENT_ARRAY_BUFFER)
-      vertexDataFloor.size() * sizeof(GL_FLOAT), // Size of data in bytes
-      vertexDataFloor.data(),                    // Raw array of data
-      GL_STATIC_DRAW); // How we intend to use the data
-}
-
 /**
  * Setup your geometry during the vertex specification step
  *
  * @return void
  */
-void VertexSpecification() { objmodel.loadModelFromFile(filepath); }
+void VertexSpecification() {
+  objModel.loadModelFromFile(filepath);
+  // We will load a texture here prior
+  //   gTexture.LoadTexture(
+  //       "C:\\Users\\kauvo\\Desktop\\github\\monorepo-"
+  //       "daniellee1011\\common\\objects\\textured_cube\\cube.ppm");
+}
 
 /**
  * PreDraw
@@ -328,103 +309,75 @@ void VertexSpecification() { objmodel.loadModelFromFile(filepath); }
  * @return void
  */
 void PreDraw() {
-  GLenum err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 1: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
   // Disable depth test and face culling.
   glEnable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 2: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+
   // Set the polygon fill mode
   glPolygonMode(GL_FRONT_AND_BACK, gPolygonMode);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 3: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+
+  // Enable texture mapping
+  glEnable(GL_TEXTURE_2D);
+
   // Initialize clear color
   // This is the background of the screen.
   glViewport(0, 0, gScreenWidth, gScreenHeight);
-  glClearColor(0.2f, 0.2f, 0.2f, 1.f);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 4: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+  glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+
   // Clear color buffer and Depth Buffer
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 5: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
 
   // Use our shader
+  // Note: Make sure to call 'use program' before looking up uniform values,
+  // otherwise 			 you may not get anything returned.
+  // See:
+  // https://www.khronos.org/opengl/wiki/GLSL_:_common_mistakes#glUniform_doesn't_work
   glUseProgram(gGraphicsPipelineShaderProgram);
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 6: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
 
   // Model transformation by translating our object into world space
   glm::mat4 model =
-      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, g_uOffset));
+
+  // Update our model matrix by applying a rotation after our translation
+  model =
+      glm::rotate(model, glm::radians(g_uRotate), glm::vec3(0.0f, 1.0f, 0.0f));
 
   // Retrieve our location of our Model Matrix
   GLint u_ModelMatrixLocation =
-      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ModelMatrix");
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "model");
   if (u_ModelMatrixLocation >= 0) {
     glUniformMatrix4fv(u_ModelMatrixLocation, 1, GL_FALSE, &model[0][0]);
   } else {
-    std::cout << "Could not find u_ModelMatrix, maybe a mispelling?\n";
+    std::cout << "Could not find model, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 7: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+
   // Update the View Matrix
   GLint u_ViewMatrixLocation =
-      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_ViewMatrix");
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "view");
   if (u_ViewMatrixLocation >= 0) {
     glm::mat4 viewMatrix = gCamera.GetViewMatrix();
     glUniformMatrix4fv(u_ViewMatrixLocation, 1, GL_FALSE, &viewMatrix[0][0]);
   } else {
-    std::cout << "Could not find u_ViewMatrix, maybe a mispelling?\n";
+    std::cout << "Could not find view, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 8: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
-  // Projection matrix in perspective
+
+  // Projection matrix (in perspective)
   glm::mat4 perspective =
       glm::perspective(glm::radians(45.0f),
-                       (float)gScreenWidth / (float)gScreenHeight, 0.1f, 20.0f);
+                       (float)gScreenWidth / (float)gScreenHeight, 0.1f, 10.0f);
 
   // Retrieve our location of our perspective matrix uniform
   GLint u_ProjectionLocation =
-      glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_Projection");
+      glGetUniformLocation(gGraphicsPipelineShaderProgram, "projection");
   if (u_ProjectionLocation >= 0) {
     glUniformMatrix4fv(u_ProjectionLocation, 1, GL_FALSE, &perspective[0][0]);
   } else {
-    std::cout << "Could not find u_Projection, maybe a mispelling?\n";
+    std::cout << "Could not find projection, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 9: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+
   // Retrieve camera position and send it to the fragment shader
   glm::vec3 cameraPosition =
       glm::vec3(gCamera.GetEyeXPosition(), gCamera.GetEyeYPosition(),
@@ -439,34 +392,8 @@ void PreDraw() {
     std::cout << "Could not find u_CameraPosition, maybe a mispelling?\n";
     exit(EXIT_FAILURE);
   }
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 10: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
 
-  Material modelMaterial = objmodel.getCurrentMaterial();
-
-  if (!modelMaterial.diffuseMap.isEmpty()) {
-    modelMaterial.diffuseMap.createTexture();
-    // modelMaterial.diffuseMap.print();
-    GLint uniformLocation =
-        glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_diffuseMap");
-
-    if (uniformLocation == -1) {
-      std::cerr << "Failed to get the location of 'u_diffuseMap'" << std::endl;
-    } else {
-      glUniform1i(uniformLocation, 0);
-    }
-    glActiveTexture(GL_TEXTURE0); // Use texture unit 0
-    glBindTexture(GL_TEXTURE_2D, modelMaterial.diffuseMap.getTextureID());
-  }
-
-  err = glGetError();
-  if (err != GL_NO_ERROR) {
-    std::cerr << "OpenGL error during PreDraw 11: " << err << std::endl;
-    return; // or handle the error as appropriate
-  }
+  objModel.SetShaderMaterialUniforms(gGraphicsPipelineShaderProgram);
 }
 
 /**
@@ -478,14 +405,15 @@ void PreDraw() {
  * @return void
  */
 void Draw() {
-  // Render the obj file
-  objmodel.render();
-
+  objModel.render();
   // Enable our attributes
-  //   glBindVertexArray(gVertexArrayObjectFloor);
+  //   glBindVertexArray(gVertexArrayObject);
+
+  // Select the vertex buffer object we want to enable
+  //   glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
 
   // Render data
-  //   glDrawArrays(GL_TRIANGLES, 0, gFloorTriangles);
+  //   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
   // Stop using our current graphics pipeline
   // Note: This is not necessary if we only have one graphics pipeline.
@@ -511,10 +439,6 @@ void getOpenGLVersionInfo() {
  * @return void
  */
 void Input() {
-  // Two static variables to hold the mouse position
-  static int mouseX = gScreenWidth / 2;
-  static int mouseY = gScreenHeight / 2;
-
   // Event handler that handles various events in SDL
   // that are related to input and output
   SDL_Event e;
@@ -530,30 +454,25 @@ void Input() {
       std::cout << "ESC: Goodbye! (Leaving MainApplicationLoop())" << std::endl;
       gQuit = true;
     }
-    if (e.type == SDL_MOUSEMOTION) {
-      // Capture the change in the mouse position
-      mouseX += e.motion.xrel;
-      mouseY += e.motion.yrel;
-      gCamera.MouseLook(mouseX, mouseY);
-    }
   }
 
   // Retrieve keyboard state
   const Uint8 *state = SDL_GetKeyboardState(NULL);
   if (state[SDL_SCANCODE_UP]) {
-    SDL_Delay(250);
-    gFloorResolution += 1;
-    std::cout << "Resolution:" << gFloorResolution << std::endl;
-    GeneratePlaneBufferData();
+    g_uOffset += 0.01f;
+    std::cout << "g_uOffset: " << g_uOffset << std::endl;
   }
   if (state[SDL_SCANCODE_DOWN]) {
-    SDL_Delay(250);
-    gFloorResolution -= 1;
-    if (gFloorResolution <= 1) {
-      gFloorResolution = 1;
-    }
-    std::cout << "Resolution:" << gFloorResolution << std::endl;
-    GeneratePlaneBufferData();
+    g_uOffset -= 0.01f;
+    std::cout << "g_uOffset: " << g_uOffset << std::endl;
+  }
+  if (state[SDL_SCANCODE_LEFT]) {
+    g_uRotate -= 1.0f;
+    std::cout << "g_uRotate: " << g_uRotate << std::endl;
+  }
+  if (state[SDL_SCANCODE_RIGHT]) {
+    g_uRotate += 1.0f;
+    std::cout << "g_uRotate: " << g_uRotate << std::endl;
   }
 
   // Camera
@@ -565,10 +484,11 @@ void Input() {
     gCamera.MoveBackward(0.01f);
   }
   if (state[SDL_SCANCODE_A]) {
+    gCamera.MoveLeft(0.01f);
   }
   if (state[SDL_SCANCODE_D]) {
+    gCamera.MoveRight(0.01f);
   }
-
   if (state[SDL_SCANCODE_TAB]) {
     SDL_Delay(250); // This is hacky in the name of simplicity,
                     // but we just delay the
@@ -580,6 +500,11 @@ void Input() {
       gPolygonMode = GL_FILL;
     }
   }
+  // Update the mouse look of the camera
+  // Center the mouse in the window
+  int mouseX, mouseY;
+  SDL_GetGlobalMouseState(&mouseX, &mouseY);
+  gCamera.MouseLook(mouseX, mouseY);
 }
 
 /**
@@ -589,14 +514,25 @@ void Input() {
  * @return void
  */
 void MainLoop() {
-  SDL_WarpMouseInWindow(gGraphicsApplicationWindow, gScreenWidth / 2,
-                        gScreenHeight / 2);
-  SDL_SetRelativeMouseMode(SDL_TRUE);
 
+  // For the mouse look
+  // Nice to center mouse in the window
+  SDL_WarpMouseInWindow(gGraphicsApplicationWindow, 640 / 2, 480 / 2);
+
+  // While application is running
   while (!gQuit) {
+    // Handle Input
     Input();
+    // Setup anything (i.e. OpenGL State) that needs to take
+    // place before draw calls
     PreDraw();
+    // Draw Calls in OpenGL
+    // When we 'draw' in OpenGL, this activates the graphics pipeline.
+    // i.e. when we use glDrawElements or glDrawArrays,
+    //      The pipeline that is utilized is whatever 'glUseProgram' is
+    //      currently binded.
     Draw();
+    // Update screen of our specified window
     SDL_GL_SwapWindow(gGraphicsApplicationWindow);
   }
 }
@@ -614,8 +550,8 @@ void CleanUp() {
   gGraphicsApplicationWindow = nullptr;
 
   // Delete our OpenGL Objects
-  glDeleteBuffers(1, &gVertexBufferObjectFloor);
-  glDeleteVertexArrays(1, &gVertexArrayObjectFloor);
+  //   glDeleteBuffers(1, &gVertexBufferObject);
+  //   glDeleteVertexArrays(1, &gVertexArrayObject);
 
   // Delete our Graphics pipeline
   glDeleteProgram(gGraphicsPipelineShaderProgram);
@@ -630,8 +566,8 @@ void CleanUp() {
  * @return program status
  */
 int main(int argc, char *args[]) {
-  std::cout << "Use w and s keys to move forward and back\n";
-  std::cout << "Use up and down to change tessellation\n";
+  std::cout << "Use arrow keys to move and rotate\n";
+  std::cout << "Use wasd to move\n";
   std::cout << "Use TAB to toggle wireframe\n";
   std::cout << "Press ESC to quit\n";
 

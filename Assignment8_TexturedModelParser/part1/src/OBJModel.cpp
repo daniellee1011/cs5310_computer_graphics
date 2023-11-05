@@ -1,65 +1,91 @@
 #include "OBJModel.hpp"
-
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iostream>
 #include <sstream>
 
-// Default constructor. Initializes an empty model.
+// Default constructor
 OBJModel::OBJModel() {
-  //   std::cout << "OBJModel default constructor: Nothing loaded" <<
-  //   std::endl;
+  std::cout << "OBJModel default constructor: Nothing loaded yet" << std::endl;
 }
 
-// Loads and sets up the model from the given file path.
+// Constructor that loads a model from the provided file path
 OBJModel::OBJModel(const std::string &filepath) { loadModelFromFile(filepath); }
 
-// Sets up the OpenGL buffers and attribute pointers for rendering.
+// Sets up the vertex buffer objects and vertex array object
 void OBJModel::setupBuffers() {
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vbo);
+  glGenBuffers(1, &ebo);
 
   glBindVertexArray(vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0],
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
+               vertices.data(), GL_STATIC_DRAW);
 
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
+               indices.data(), GL_STATIC_DRAW);
+
+  // Vertex positions
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+  // Texture coordinates
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, texCoords));
+  glEnableVertexAttribArray(1);
+
+  // Vertex normals
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void *)offsetof(Vertex, normal));
   glEnableVertexAttribArray(2);
 
-  // UVs (textCoords)
-  glVertexAttribPointer(
-      2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-      (void *)offsetof(Vertex, textCoord)); // Rename to texCoord for clarity.
-  glEnableVertexAttribArray(3);
-
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+
+  // Not needed anymore because data is now in GPU
+  glDeleteBuffers(1, &ebo);
 }
 
-// Renders the loaded model using the previously set up OpenGL buffers.
+// Sets the shader material uniforms
+void OBJModel::SetShaderMaterialUniforms(GLuint shaderProgram) {
+  glUniform3fv(glGetUniformLocation(shaderProgram, "ka"), 1, material.ka);
+  glUniform3fv(glGetUniformLocation(shaderProgram, "kd"), 1, material.kd);
+  glUniform3fv(glGetUniformLocation(shaderProgram, "ks"), 1, material.ks);
+
+  // Set the uniform for the texture sampler to the appropriate texture unit
+  glUniform1i(glGetUniformLocation(shaderProgram, "u_DiffuseMap"),
+              0); // Corresponds to GL_TEXTURE0
+  glUniform1i(glGetUniformLocation(shaderProgram, "u_BumpMap"),
+              1); // Corresponds to GL_TEXTURE1
+  glUniform1i(glGetUniformLocation(shaderProgram, "u_SpecularMap"),
+              2); // Corresponds to GL_TEXTURE2
+}
+
+// Renders the model by binding the VAO and drawing its elements
 void OBJModel::render() const {
   glBindVertexArray(vao);
 
-  //   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-  glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+  if (material.map_kd.GetImage()) {
+    glActiveTexture(GL_TEXTURE0);
+    material.map_kd.Bind(0);
+  }
 
+  if (material.map_bump.GetImage()) {
+    glActiveTexture(GL_TEXTURE1);
+    material.map_kd.Bind(1);
+  }
+
+  if (material.map_ks.GetImage()) {
+    glActiveTexture(GL_TEXTURE2);
+    material.map_kd.Bind(2);
+  }
+
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()),
+                 GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 }
 
-glm::vec3 generateColor(const glm::vec3 &normal) {
-  glm::vec3 color = (normal + 1.0f) * 0.5f;
-  return color;
-}
-
-// Loads model data from an OBJ file.
-// Parses vertices, normals, and face indices, then sets up OpenGL buffers.
+// Loads the model data from the specified .obj file
 void OBJModel::loadModelFromFile(const std::string &filepath) {
   std::ifstream objFile(filepath);
   if (!objFile.is_open()) {
@@ -69,10 +95,8 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
 
   std::string line;
   std::vector<glm::vec3> temp_vertices;
-  std::vector<glm::vec3> temp_normals;
   std::vector<glm::vec2> temp_texCoords;
-  MTLReader mtlReader; // Instance to handle MTL files
-  bool materialsLoaded = false;
+  std::vector<glm::vec3> temp_normals;
 
   while (std::getline(objFile, line)) {
     std::istringstream ss(line);
@@ -82,24 +106,11 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
     if (prefix == "mtllib") {
       std::string mtlFileName;
       ss >> mtlFileName;
-      materialsLoaded = mtlReader.loadMaterialsFromFile(
-          filepath.substr(0, filepath.find_last_of("/\\") + 1) + mtlFileName);
-      if (!materialsLoaded) {
-        std::cerr << "Failed to load materials from MTL file." << std::endl;
-      } else {
-        // std::cout << "Successfully opened MTL file." << std::endl;
-      }
-      //   mtlReader.printAllMaterials();
+      LoadMaterials(filepath.substr(0, filepath.find_last_of("/\\") + 1) +
+                    mtlFileName);
     } else if (prefix == "usemtl") {
       std::string matName;
       ss >> matName;
-      if (materialsLoaded) {
-        currentMaterial = mtlReader.getMaterial(matName);
-        if (currentMaterial.name.empty()) {
-          std::cerr << "Material '" << matName
-                    << "' not found in loaded materials." << std::endl;
-        }
-      }
     } else if (prefix == "v") {
       glm::vec3 vertex;
       ss >> vertex.x >> vertex.y >> vertex.z;
@@ -113,46 +124,87 @@ void OBJModel::loadModelFromFile(const std::string &filepath) {
       ss >> normal.x >> normal.y >> normal.z;
       temp_normals.push_back(normal);
     } else if (prefix == "f") {
-      std::string segment;
-      std::array<std::string, 3> vertexStrings;
-      std::array<glm::ivec3, 3> vertexData;
+      std::string vertex1, vertex2, vertex3;
+      unsigned int vIndex[3], uvIndex[3], nIndex[3];
+      char slash;
+
+      ss >> vertex1 >> vertex2 >> vertex3;
+      sscanf(vertex1.c_str(), "%d/%d/%d", &vIndex[0], &uvIndex[0], &nIndex[0]);
+      sscanf(vertex2.c_str(), "%d/%d/%d", &vIndex[1], &uvIndex[1], &nIndex[1]);
+      sscanf(vertex3.c_str(), "%d/%d/%d", &vIndex[2], &uvIndex[2], &nIndex[2]);
 
       for (int i = 0; i < 3; i++) {
-        ss >> vertexStrings[i];
-        std::replace(vertexStrings[i].begin(), vertexStrings[i].end(), '/',
-                     ' ');
-        std::istringstream vss(vertexStrings[i]);
-        vss >> vertexData[i].x >> vertexData[i].y >> vertexData[i].z;
-      }
-
-      for (int i = 0; i < 3; i++) {
-        auto &v = vertexData[i];
         Vertex vertex;
-        vertex.position = temp_vertices[v.x - 1];
-        if (!temp_texCoords.empty()) {
-          vertex.textCoord = temp_texCoords[v.y - 1];
-        }
-        if (!temp_normals.empty()) {
-          vertex.normal = temp_normals[v.z - 1];
-        }
+        vertex.position = temp_vertices[vIndex[i] - 1];
+        vertex.texCoords = temp_texCoords[uvIndex[i] - 1];
+        vertex.normal = temp_normals[nIndex[i] - 1];
         vertices.push_back(vertex);
+        indices.push_back(vertices.size() - 1);
       }
     }
   }
-  objFile.close();
 
+  objFile.close();
   setupBuffers();
 }
 
-// Cleans up OpenGL resources associated with the model.
-OBJModel::~OBJModel() {
-  glDeleteBuffers(1, &vbo);
-  glDeleteVertexArrays(1, &vao);
+// Loads the material properties from a .mtl file
+void OBJModel::LoadMaterials(const std::string &mtlFilePath) {
+  std::ifstream mtlFile(mtlFilePath);
+  std::string line;
+
+  if (!mtlFile.is_open()) {
+    std::cerr << "Could not open MTL file at " << mtlFilePath << std::endl;
+    return;
+  }
+
+  std::string directory =
+      mtlFilePath.substr(0, mtlFilePath.find_last_of("/\\") + 1);
+
+  while (getline(mtlFile, line)) {
+    std::istringstream lineStream(line);
+    std::string prefix;
+    lineStream >> prefix;
+
+    if (prefix == "Ns") {
+      lineStream >> material.ns;
+    } else if (prefix == "Ka") {
+      lineStream >> material.ka[0] >> material.ka[1] >> material.ka[2];
+    } else if (prefix == "Kd") {
+      lineStream >> material.kd[0] >> material.kd[1] >> material.kd[2];
+    } else if (prefix == "Ks") {
+      lineStream >> material.ks[0] >> material.ks[1] >> material.ks[2];
+    } else if (prefix == "Ni") {
+      lineStream >> material.ni;
+    } else if (prefix == "d") {
+      lineStream >> material.d;
+    } else if (prefix == "illum") {
+      lineStream >> material.illum;
+    } else if (prefix == "map_Kd") {
+      std::string textureFile;
+      lineStream >> textureFile;
+      material.map_kd.LoadTexture(directory + textureFile);
+    } else if (prefix == "map_Bump") {
+      std::string textureFile;
+      lineStream >> textureFile;
+      material.map_bump.LoadTexture(directory + textureFile);
+    } else if (prefix == "map_Ks") {
+      std::string textureFile;
+      lineStream >> textureFile;
+      material.map_ks.LoadTexture(directory + textureFile);
+    }
+  }
+
+  Image *imageD = material.map_kd.GetImage();
+  if (imageD) {
+    std::cout << imageD->GetHeight() << " " << imageD->GetWidth() << std::endl;
+    //     imageD->PrintPixels();
+  }
 }
 
-void OBJModel::printUVs() const {
-  for (const Vertex &vertex : vertices) {
-    std::cout << "UV: (" << vertex.textCoord.x << ", " << vertex.textCoord.y
-              << ")" << std::endl;
-  }
+// Destructor which cleans up the allocated buffers
+OBJModel::~OBJModel() {
+  glDeleteBuffers(1, &vbo);
+  glDeleteBuffers(1, &ebo);
+  glDeleteVertexArrays(1, &vao);
 }

@@ -1,59 +1,72 @@
+// Guard to prevent multiple inclusions of the header file
 #ifndef OBJMODEL_HPP
 #define OBJMODEL_HPP
 
-#include "MTLReader.hpp"
-
-// Third Party Libraries
-#include <SDL2/SDL.h>
-#include <glad/glad.h>
-#include <glm/glm.hpp>
+// Required dependencies and libraries
+#include "Texture.hpp"
+#include <fstream>
+#include <glad/glad.h> // OpenGL loader library
+#include <glm/glm.hpp> // GLM for matrix and vector operations
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-
-// C++ Standard Template Library (STL)
-#include <fstream>
 #include <iostream>
-#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-// The OBJModel class represents a 3D model loaded from an OBJ file.
+// Structure to represent the material properties of an object
+struct Material {
+  float ns;         // Specular exponent
+  float ka[3];      // Ambient color
+  float kd[3];      // Diffuse color
+  float ks[3];      // Specular color
+  float ke[3];      // Emissive color
+  float ni;         // Optical density (index of refraction)
+  float d;          // Dissolve (transparency)
+  int illum;        // Illumination model
+  Texture map_kd;   // Diffuse texture map
+  Texture map_bump; // Bump map texture
+  Texture map_ks;   // Specular texture map
+};
+
+// Class to represent an OBJ model
 class OBJModel {
 public:
-  // Default constructor. Initializes an empty model.
-  OBJModel();
-  // Parameterized constructor. Loads a model from the provided OBJ file path.
-  OBJModel(const std::string &filepath);
-  // Destructor. Cleans up OpenGL resources.
-  ~OBJModel();
+  OBJModel();                            // Default constructor
+  OBJModel(const std::string &filepath); // Constructor to load model from file
+  ~OBJModel();                           // Destructor to clean up resources
 
-  // Renders the loaded model to the current OpenGL context.
-  void render() const;
-  // Loads a model from the provided OBJ file path.
-  void loadModelFromFile(const std::string &filepath);
-  const Material &getCurrentMaterial() const { return currentMaterial; }
-  const unsigned int &getVAO() const { return vao; }
-  void printUVs() const;
+  void render() const; // Render the model
+  void
+  loadModelFromFile(const std::string &filepath); // Load model data from file
+  void SetShaderMaterialUniforms(
+      GLuint shaderProgram); // Set material properties in the shader
 
 private:
-  // Represents a single vertex with position and normal data.
+  // Vertex structure to represent a vertex with position, texture coordinates,
+  // and normal vector
   struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 textCoord;
+    glm::vec3 position;  // Vertex position
+    glm::vec2 texCoords; // Texture coordinates
+    glm::vec3 normal;    // Normal vector
   };
 
-  std::vector<Vertex> vertices;
-  unsigned int vao;
-  unsigned int vbo;
+  // Model data
+  std::vector<Vertex> vertices; // List of vertices
+  std::vector<GLuint> indices;  // Indices for indexed drawing
+  std::unordered_map<std::string, Texture>
+      texturesLoaded; // Map of loaded textures to avoid duplication
 
-  // Add a member to keep track of the current material name
-  Material currentMaterial;
+  // OpenGL buffer objects
+  GLuint vao, vbo, ebo; // Vertex Array Object, Vertex Buffer Object, and
+                        // Element Buffer Object
 
-  // Initializes OpenGL buffers and attribute pointers.
-  void setupBuffers();
+  Material material;   // Material properties of the model
+  void setupBuffers(); // Setup the VAO, VBO, and EBO
+  void
+  LoadMaterials(const std::string
+                    &mtlFilePath); // Load material properties from a .mtl file
 };
 
 #endif // OBJMODEL_HPP
