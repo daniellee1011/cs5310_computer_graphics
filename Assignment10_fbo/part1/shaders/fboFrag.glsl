@@ -14,10 +14,8 @@ out vec4 FragColor;
 
 void main()
 {
-    // Store our final texture color
-    vec3 diffuseColor;
-    diffuseColor = texture(u_DiffuseMap, v_texCoord).rgb;
-        
-    FragColor = vec4(vec3(1.0 - texture(u_DiffuseMap, v_texCoord)), 1.0);
+    FragColor = texture(u_DiffuseMap, v_texCoord);
+    float average = (FragColor.r + FragColor.g + FragColor.b) / 3.0;
+    FragColor = vec4(average, average, average, 1.0);
 }
 // ==================================================================
