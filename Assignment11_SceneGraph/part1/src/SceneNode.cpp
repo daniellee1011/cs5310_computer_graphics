@@ -64,6 +64,14 @@ void SceneNode::Draw() {
 void SceneNode::Update(glm::mat4 projectionMatrix, Camera *camera) {
   if (m_object != nullptr) {
     // TODO: Implement here!
+    if (m_parent != nullptr) {
+      // Combine parent's world transform with this node's local transform
+      m_worldTransform = m_parent->GetWorldTransform() * GetLocalTransform();
+
+    } else {
+      // If no parent, world transform is the local transform
+      m_worldTransform = GetLocalTransform();
+    }
 
     // Now apply our shader
     m_shader.Bind();
